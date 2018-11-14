@@ -52,77 +52,55 @@ class DataModelGenerator
         $this->pathEntities = $pathEntities;
     }
 
-    /**
-     * @param string $rawContent
-     * @return string[]
-     */
-    protected function parseRawContent(string $rawContent): array
+    protected static function checkPropertyOrThrow(array &$input, string $property): void
     {
-        $rawContent = str_replace("\r\n", "\n", $rawContent);
-
-        return explode("\n\n", $rawContent);
+        if (!isset($input[$property])) {
+            throw new \RuntimeException("The property `$property` is required but missing!");
+        }
     }
 
-    protected function parseRawEntityRelation(string $rawEntityRelation): ?EntityRelation
+    protected function parseEntityRelation(string $sourceEntity, string $fieldName, array $rawField): ?EntityRelation
     {
-        if (($idxRelation = strpos($rawEntityRelation, ' => ')) === false) {
+        if (!isset($rawField['relation'])) {
             return null;
         }
 
-        $target = substr($rawEntityRelation, 0, $idxRelation);
-        $targetRelation = substr($rawEntityRelation, $idxRelation + \strlen(' => '));
-
         $result = new EntityRelation();
 
+        $source = new EntityRelationPoint();
+        $source->setEntity($sourceEntity);
+        $result->setSource($source);
+
+        static::checkPropertyOrThrow($rawField, 'target');
+
+        $target = new EntityRelationPoint();
+        $target->setEntity($rawField['target']);
+        $target->setName($fieldName);
+        $target->setRelation($rawField['relation']);
         $result->setTarget($target);
-        $result->setTargetRelation($targetRelation);
 
         return $result;
     }
 
-    protected function parseRawEntityField(string $rawEntityField): ?EntityField
+    protected function parseEntityField(string $fieldName, array $rawField): EntityField
     {
-        if (preg_match_all('~^(?P<name>.*)\\s\\((?P<rawdata>.*)\\)$~',
-                $rawEntityField, $fieldMatches, PREG_SET_ORDER
-            ) !== 1) {
-            return null;
-        }
+        static::checkPropertyOrThrow($rawField, 'type');
+        $type = $rawField['type'];
 
-        $rawEntityField = $fieldMatches[0]['rawdata'];
-
-        $rawEntityField = strtolower($rawEntityField);
-
-        $data = explode(' ', $rawEntityField);
-
-        $type = $data[0];
-        $nullable = \in_array('null', $data, true);
-        $size = null;
-        if (\in_array('private', $data, true)) {
-            $modifier = EntityField::MODIFIER_PRIVATE;
-        } elseif (\in_array('protected', $data, true)) {
-            $modifier = EntityField::MODIFIER_PROTECTED;
-        } else {
-            $modifier = EntityField::MODIFIER_PUBLIC;
-        }
-
-        foreach ($data as $entry) {
-            if ($entry === $type) {
-                continue;
-            }
-
-            if (is_numeric($entry)) {
-                $size = (int)$entry;
-                break;
-            }
-        }
+        $size = $rawField['size'] ?? null;
+        $nullable = ($rawField['size'] ?? 'false') === 'true';
+        $modifier = $rawField['modifier'] ?? EntityField::MODIFIER_PROTECTED;
+        $value = $rawField['value'] ?? $rawField['target'] ?? null;
 
         $result = new EntityField();
 
-        $result->setName($fieldMatches[0]['name']);
+        $result->setName($fieldName);
         $result->setType($type);
         $result->setNullable($nullable);
         $result->setSize($size);
         $result->setModifier($modifier);
+        $result->setValue($value);
+        $result->setRawData($rawField);
 
         return $result;
     }
@@ -131,18 +109,12 @@ class DataModelGenerator
      * @param string[] $rawEntities
      * @return Entity[]
      */
-    protected function parseRawEntities(array $rawEntities): array
+    protected function parse(array $rawEntities): array
     {
         /** @var Entity[] $entities */
         $entities = [];
 
-        foreach ($rawEntities as $rawEntity) {
-            $rawEntity = explode("\n", $rawEntity);
-
-            $nameParts = explode(' ', $rawEntity[0]);
-            $name = $nameParts[0];
-
-            $type = \count($nameParts) > 1 && $nameParts[1] === '(enum)' ? Entity::TYPE_ENUM : Entity::TYPE_ENTITY;
+        foreach ($rawEntities as $entityName => $rawFields) {
 
             /** @var EntityField[] $fields */
             $fields = [];
@@ -150,39 +122,54 @@ class DataModelGenerator
             /** @var EntityRelation[] $relations */
             $relations = [];
 
-            for ($i = 1, $iMax = \count($rawEntity); $i < $iMax; $i++) {
-                $rawEntityData = substr($rawEntity[$i], 2);
+            $isEnum = true;
 
-                $relation = $this->parseRawEntityRelation($rawEntityData);
-                if ($relation !== null) {
-                    $relations[$relation->getTarget()] = $relation;
-                    continue;
-                }
-
-                if ($type === Entity::TYPE_ENUM) {
-                    $rawEntityData = explode(' ', $rawEntityData);
+            foreach ($rawFields as $fieldName => $rawField) {
+                if (!\is_array($rawField)) {
+                    if (!$isEnum) {
+                        throw new \RuntimeException('Invalid configuration, enum and entity mixes are not allowed!');
+                    }
 
                     $field = new EntityField();
 
-                    $field->setName(strtoupper($rawEntityData[0]));
-                    $field->setValue($rawEntityData[1]);
+                    $value = $rawField;
+                    if (\is_string($value)) {
+                        $type = EntityField::TYPE_STRING;
+                    } else if (\is_numeric($value)) {
+                        $type = EntityField::TYPE_INTEGER;
+                    } else if (\is_bool($value)) {
+                        $type = EntityField::TYPE_BOOLEAN;
+                    } else {
+                        $type = EntityField::TYPE_UNKNOWN;
+                    }
+
+                    $field->setName($fieldName);
+                    $field->setType($type);
+                    $field->setModifier(EntityField::MODIFIER_PUBLIC);
+                    $field->setValue(json_encode($value));
 
                     $fields[$field->getName()] = $field;
                     continue;
                 }
 
-                $field = $this->parseRawEntityField($rawEntityData);
+                $isEnum = false;
 
-                if ($field === null) {
+                $relation = $this->parseEntityRelation($entityName, $fieldName, $rawField);
+                if ($relation !== null) {
+                    $relations[$relation->getTarget()->getName()] = $relation;
                     continue;
                 }
+
+                $field = $this->parseEntityField($fieldName, $rawField);
 
                 $fields[$field->getName()] = $field;
             }
 
+            $type = $isEnum ? Entity::TYPE_ENUM : Entity::TYPE_ENTITY;
+
             $entity = new Entity();
 
-            $entity->setName($name);
+            $entity->setName($entityName);
             $entity->setType($type);
             $entity->setFields($fields);
             $entity->setRelations($relations);
@@ -192,18 +179,28 @@ class DataModelGenerator
 
         foreach ($entities as $entitySource) {
             foreach ($entitySource->getRelations() as $relation) {
-                $relationSource = $entitySource->getName();
-                $relationTarget = $relation->getTarget();
+                $relationSourceEntity = $entitySource->getName();
+                $relationTargetEntity = $relation->getTarget()->getEntity();
 
-                $entityTarget = $entities[$relationTarget];
-                $entityTargetRelations = $entityTarget->getRelations();
+                $entityTarget = $entities[$relationTargetEntity];
+                $entityTargetRelations = array_filter($entityTarget->getRelations(),
+                    function (EntityRelation $relation) use ($relationSourceEntity): bool {
+                        return $relation->getTarget()->getEntity() === $relationSourceEntity;
+                    });
 
-                if (!isset($entityTargetRelations[$relationSource])) {
-                    throw new \RuntimeException("Missing relation `{$relationTarget}` -> `{$relationSource}`!");
+                $entityTargetRelationsCount = \count($entityTargetRelations);
+
+                if ($entityTargetRelationsCount < 1) {
+                    throw new \RuntimeException("Missing relation `$relationTargetEntity` -> `$relationSourceEntity`!");
                 }
 
-                $relation->setSource($entityTargetRelations[$relationSource]->getTarget());
-                $relation->setSourceRelation($entityTargetRelations[$relationSource]->getTargetRelation());
+                if ($entityTargetRelationsCount > 1) {
+                    throw new \RuntimeException('Not implemented yet: inversedBy currently not supported!');
+                }
+
+                $entityTargetRelation = reset($entityTargetRelations);
+
+                $relation->getSource()->inverse($entityTargetRelation->getTarget());
             }
         }
 
@@ -212,11 +209,9 @@ class DataModelGenerator
 
     public function read(): void
     {
-        throw new \RuntimeException('Not implemented yet!');
+        $rawEntities = $this->inputModel->getRawEntities();
 
-        $rawEntities = $this->parseRawContent(file_get_contents($path));
-
-        $this->entities = $this->parseRawEntities($rawEntities);
+        $this->entities = $this->parse($rawEntities);
     }
 
     protected function generatePlantTextUml(): void

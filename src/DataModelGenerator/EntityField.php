@@ -8,6 +8,12 @@ class EntityField
     public const MODIFIER_PROTECTED = '#';
     public const MODIFIER_PRIVATE = '-';
 
+    public const TYPE_ENUM = Entity::TYPE_ENUM;
+    public const TYPE_STRING = 'string';
+    public const TYPE_INTEGER = 'int';
+    public const TYPE_BOOLEAN = 'bool';
+    public const TYPE_UNKNOWN = 'unknown';
+
     /**
      * @var string
      */
@@ -37,6 +43,11 @@ class EntityField
      * @var null|string
      */
     protected $value;
+
+    /**
+     * @var null|array
+     */
+    protected $rawData;
 
     public function getName(): string
     {
@@ -96,5 +107,15 @@ class EntityField
     public function setValue(?string $value): void
     {
         $this->value = $value;
+    }
+
+    public function getRawData(): ?array
+    {
+        return $this->rawData;
+    }
+
+    public function setRawData(?array $rawData): void
+    {
+        $this->rawData = $rawData;
     }
 }
