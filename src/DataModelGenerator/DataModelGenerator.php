@@ -225,7 +225,7 @@ class DataModelGenerator
 
     protected static function getFieldName(string $entity, string $relation): string
     {
-        if ($relation === EntityRelation::RELATION_MANY) {
+        if ($relation === EntityRelationPoint::RELATION_MANY) {
             $fieldSize = 999;
         } else {
             $fieldSize = 1;
@@ -255,6 +255,7 @@ class DataModelGenerator
                 ]);
 
                 foreach ($entity->getFields() as $field) {
+                    // TODO: also support strings, etc.
                     $property = new EntityClassProperty($field->getName(), 'int', $field->getValue(), []);
 
                     $property->setConstant(true);
@@ -270,7 +271,7 @@ class DataModelGenerator
             }
 
             if ($entity->getType() !== Entity::TYPE_ENTITY) {
-                throw new \RuntimeException("Unexpected type `{$entity->getType()}`!");
+                throw new \RuntimeException("Unexpected entity type `{$entity->getType()}`!");
             }
 
             $imports = [];
@@ -291,7 +292,11 @@ class DataModelGenerator
                 '@ORM\Column(type="integer")',
             ]);
 
+            var_dump($entity->getFields());
+            die;
+
             foreach ($entity->getFields() as $field) {
+                // TODO: use raw data
                 $type = $field->getType();
 
                 $ormColumnData = [
@@ -330,7 +335,9 @@ class DataModelGenerator
             $entityNamespace = $appNamespace . '\\Entity\\Base';
             $enumNamespace = $appNamespace . '\\Enum';
             foreach ($entity->getRelations() as $relation) {
-                $targetNamespace = $relation->getTargetRelation() === EntityRelation::RELATION_ENUM
+                $targetRelation = $relation->getTarget()->getRelation();
+
+                $targetNamespace = $targetRelation === EntityRelationPoint::RELATION_ENUM
                     ? $enumNamespace
                     : $entityNamespace;
                 $target = $relation->getTarget();
@@ -342,9 +349,9 @@ class DataModelGenerator
                 }
 
                 $fieldNameSource = static::getFieldName($relation->getSource(), $relation->getSourceRelation());
-                $fieldNameTarget = static::getFieldName($target, $relation->getTargetRelation());
+                $fieldNameTarget = static::getFieldName($target, $targetRelation);
 
-                if ($relation->getTargetRelation() === EntityRelation::RELATION_ENUM) {
+                if ($targetRelation === EntityRelationPoint::RELATION_ENUM) {
                     $property = new EntityClassProperty($fieldNameTarget, 'int|null', null, [
                         '@ORM\Column(type="integer", nullable=true)',
                         "@see {$target}",
@@ -354,7 +361,7 @@ class DataModelGenerator
                     continue;
                 }
 
-                $ormRelation = ucfirst($relation->getSourceRelation()) . 'To' . ucfirst($relation->getTargetRelation());
+                $ormRelation = ucfirst($relation->getSourceRelation()) . 'To' . ucfirst($targetRelation);
 
                 $ormColumnData = [
                     "targetEntity=\"{$target}\"",
@@ -383,13 +390,13 @@ class DataModelGenerator
 
                 $type = $target;
 
-                if ($relation->getTargetRelation() === EntityRelation::RELATION_MANY) {
+                if ($targetRelation === EntityRelationPoint::RELATION_MANY) {
                     $type .= '[]|Collection';
                 }
 
                 $defaultValue = 'null';
 
-                if ($relation->getTargetRelation() === EntityRelation::RELATION_MANY) {
+                if ($targetRelation === EntityRelationPoint::RELATION_MANY) {
                     $defaultValue = 'new ArrayCollection()';
                 }
 

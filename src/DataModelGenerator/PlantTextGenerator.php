@@ -2,7 +2,7 @@
 
 namespace Uay\YEntityGeneratorBundle\DataModelGenerator;
 
-use Uay\YEntityGeneratorBundle\Utils\TextUtil;
+use Uay\YEntityGeneratorBundle\Utils\FileUtil;
 use function Jawira\PlantUml\encodep;
 
 class PlantTextGenerator
@@ -20,21 +20,33 @@ class PlantTextGenerator
 
         $result[] = "{$type} {$entity->getName()} {";
 
+        $plantTypeField = 'field';
+        $plantTypeMethod = 'method';
+        $plantTypeExternal = $plantTypeMethod;
+
         if ($entity->getType() === Entity::TYPE_ENTITY) {
-            $result[] = '  {field}+integer id';
+            $result[] = "  {{$plantTypeField}}+integer id";
         }
 
         foreach ($entity->getFields() as $field) {
+            $plantType = $plantTypeField;
+
             $fieldName = $field->getName();
 
             if ($entity->getType() === Entity::TYPE_ENUM) {
                 $fieldName = strtoupper($fieldName);
 
-                $result[] = "  {$fieldName} = {$field->getValue()}";
+                $value = json_decode($field->getValue(), true);
+                $result[] = "  {$fieldName} = {$value}";
                 continue;
             }
 
             $fieldType = $field->getType();
+
+            if ($fieldType === EntityField::TYPE_ENUM) {
+                $fieldType = $field->getValue();
+                $plantType = $plantTypeExternal;
+            }
 
             $fieldSize = $field->getSize();
             if ($fieldSize !== null && $fieldSize > 0) {
@@ -47,30 +59,16 @@ class PlantTextGenerator
 
             $fieldModifier = $field->getModifier();
 
-            $result[] = "  {field}{$fieldModifier}{$fieldType} {$fieldName}";
+            $result[] = "  {{$plantType}}{$fieldModifier}{$fieldType} {$fieldName}";
         }
 
         foreach ($entity->getRelations() as $relation) {
-            $targetRelation = $relation->getTargetRelation();
+            $target = $relation->getTarget();
 
-            switch ($targetRelation) {
-                case EntityRelation::RELATION_MANY:
-                    $targetRelation = 999;
-                    break;
-                case EntityRelation::RELATION_ONE:
-                case EntityRelation::RELATION_ENUM:
-                    $targetRelation = 1;
-                    break;
-                default:
-                    $targetRelation = (int)$targetRelation;
-                    break;
-            }
+            $modifier = EntityField::MODIFIER_PROTECTED;
+            $type = $target->getEntity() . ($target->getRelation() === EntityRelationPoint::RELATION_MANY ? '[]' : '');
 
-            $name = TextUtil::pluralize($targetRelation, $relation->getTarget());
-
-            $name = lcfirst($name);
-
-            $result[] = "  {method}+{$relation->getTarget()} {$name}";
+            $result[] = "  {{$plantTypeExternal}}{$modifier}{$type} {$target->getName()}";
         }
 
         $result[] = '}';
@@ -81,11 +79,11 @@ class PlantTextGenerator
 
     protected function parseRelation(string $relation, string $default = null): string
     {
-        if ($relation === 'one' || $relation === 'enum') {
+        if ($relation === EntityRelationPoint::RELATION_ONE || $relation === EntityRelationPoint::RELATION_ENUM) {
             return '1';
         }
 
-        if ($relation === 'many') {
+        if ($relation === EntityRelationPoint::RELATION_MANY) {
             return 'n';
         }
 
@@ -94,6 +92,27 @@ class PlantTextGenerator
         }
 
         return $default;
+    }
+
+    /**
+     * @param string[] $members
+     * @return string
+     */
+    protected function generatePlantRelation(array $members): string
+    {
+        ksort($members);
+        $membersKeys = array_keys($members);
+
+        $members = array_map(function (string $relation): string {
+            return $this->parseRelation($relation, '?');
+        }, $members);
+
+        $relationData = [
+            "{$membersKeys[0]} \"{$members[$membersKeys[0]]}\"",
+            ' -up- ',
+            "\"{$members[$membersKeys[1]]}\" {$membersKeys[1]}",
+        ];
+        return implode($relationData);
     }
 
     /**
@@ -124,26 +143,40 @@ class PlantTextGenerator
             foreach ($entity->getRelations() as $relation) {
                 $relationId = $relation->generateId();
 
-                $relationSource = $this->parseRelation($relation->getSourceRelation(), '?');
-                $relationTarget = $this->parseRelation($relation->getTargetRelation(), '?');
-
-                $members = [
-                    $relation->getSource() => $relationSource,
-                    $relation->getTarget() => $relationTarget,
+                /** @var EntityRelationPoint[] $points */
+                $points = [
+                    $relation->getSource(),
+                    $relation->getTarget(),
                 ];
-                ksort($members);
-                $membersKeys = array_keys($members);
 
-                $relationData = '';
-                $relationData .= "{$membersKeys[0]} \"{$members[$membersKeys[0]]}\"";
-                $relationData .= ' -up- ';
-                $relationData .= "\"{$members[$membersKeys[1]]}\" {$membersKeys[1]}";
+                $members = [];
+                foreach ($points as $point) {
+                    $members[$point->getEntity()] = $point->getRelation();
+                }
+
+                $relationData = $this->generatePlantRelation($members);
 
                 if (isset($plantTextRelations[$relationId]) && $plantTextRelations[$relationId] !== $relationData) {
                     throw new \RuntimeException("Incompatible relation `{$relationData}`!");
                 }
 
                 $plantTextRelations[$relationId] = $relationData;
+            }
+
+            foreach ($entity->getFields() as $field) {
+                $fieldType = $field->getType();
+                if ($fieldType !== EntityField::TYPE_ENUM) {
+                    continue;
+                }
+
+                $entityName = $entity->getName();
+                $fieldValue = $field->getValue();
+
+                $relationId = "{$entityName}.{$fieldValue} [{$fieldType}]";
+                $plantTextRelations[$relationId] = $this->generatePlantRelation([
+                    $entityName => EntityRelationPoint::RELATION_MANY,
+                    $fieldValue => EntityRelationPoint::RELATION_ONE,
+                ]);
             }
         }
         $plantTextRelations = array_unique($plantTextRelations);
@@ -159,6 +192,12 @@ class PlantTextGenerator
 
     public function write(string $path): void
     {
+        $pathParent = \dirname($path);
+
+        if (!file_exists($pathParent)) {
+            FileUtil::mkdirRecursive($pathParent);
+        }
+
         file_put_contents($path, $this->plantText);
     }
 

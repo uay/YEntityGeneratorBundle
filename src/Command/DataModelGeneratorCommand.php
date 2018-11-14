@@ -9,6 +9,7 @@ use Symfony\Component\HttpKernel\KernelInterface;
 use Uay\YEntityGeneratorBundle\DataModelGenerator\DataModelGenerator;
 use Uay\YEntityGeneratorBundle\DataModelGenerator\InputModel;
 use Uay\YEntityGeneratorBundle\DependencyInjection\UayEntitiesExtension;
+use Uay\YEntityGeneratorBundle\Utils\FileUtil;
 
 class DataModelGeneratorCommand extends ContainerAwareCommand
 {
@@ -43,9 +44,13 @@ class DataModelGeneratorCommand extends ContainerAwareCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $pathApplication = realpath($this->kernel->getRootDir() . DIRECTORY_SEPARATOR . '..');
+        $pathApplication = \dirname($this->kernel->getRootDir());
 
-        $pathEntities = realpath($pathApplication . DIRECTORY_SEPARATOR . 'entities');
+        $pathEntities = $pathApplication . DIRECTORY_SEPARATOR . 'entities';
+
+        if (!file_exists($pathEntities)) {
+            FileUtil::mkdirRecursive($pathEntities);
+        }
 
         $container = $this->kernel->getContainer();
         if ($container === null) {
