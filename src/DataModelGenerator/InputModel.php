@@ -20,13 +20,13 @@ class InputModel
     protected $configuration = [
         self::CONFIG_KEY_NAMESPACE => [
             'app' => 'App',
-            'base' => 'Base',
+            'base' => 'Generated',
             'enum' => 'Enum',
             'entity' => 'Entity',
             'repository' => 'Repository',
         ],
         self::CONFIG_KEY_CLASS_POSTFIX => [
-            'entity' => 'Base',
+            'entity' => 'Generated',
             'repository' => 'Repository',
         ],
     ];

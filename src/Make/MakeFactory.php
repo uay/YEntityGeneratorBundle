@@ -39,6 +39,26 @@ class MakeFactory
         $this->namespacePath = realpath($this->namespacePath);
     }
 
+    public static function renderArrayAsString(array $array, ?string $intend = null): string
+    {
+        if ($intend === null) {
+            $intend = static::FILE_INTEND;
+        }
+
+        $result = [];
+
+        foreach ($array as $item) {
+            if (\is_array($item)) {
+                $result[] = static::renderArrayAsString($item, $intend . static::FILE_INTEND);
+                continue;
+            }
+
+            $result[] = $intend . $item;
+        }
+
+        return implode(PHP_EOL, $result);
+    }
+
     protected function getClassname(): string
     {
         return '\\' . $this->namespace . '\\' . $this->class->getName();
@@ -338,6 +358,11 @@ class MakeFactory
 
         foreach ($this->getPropertyAccessors() as $line) {
             $classLines[] = $line;
+        }
+
+        $body = $this->class->getBody();
+        if ($body !== null && $body !== '') {
+            $classLines[] = $body;
         }
 
         // Removes last space

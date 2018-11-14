@@ -40,6 +40,11 @@ class EntityClass
     protected $extends;
 
     /**
+     * @var string|null
+     */
+    protected $body;
+
+    /**
      * @param string $name
      * @param string $basePath
      * @param string[] $imports
@@ -56,6 +61,7 @@ class EntityClass
             'abstract',
         ];
         $this->extends = null;
+        $this->body = '';
     }
 
     public function getName(): string
@@ -121,5 +127,15 @@ class EntityClass
     public function setExtends(?string $extends): void
     {
         $this->extends = $extends;
+    }
+
+    public function getBody(): ?string
+    {
+        return $this->body;
+    }
+
+    public function setBody(?string $body): void
+    {
+        $this->body = $body;
     }
 }

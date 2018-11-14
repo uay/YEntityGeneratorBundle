@@ -287,7 +287,7 @@ class DataModelGenerator
 
                     $ormColumnData = [
                         // TODO: also support strings, etc.
-                        'type' => 'integer',
+                        'type' => '"integer"',
                     ];
                 } else {
                     $ormColumnData = $field->getRawData() ?? [];
@@ -297,6 +297,10 @@ class DataModelGenerator
 
                 if ($field->isNullable()) {
                     $ormColumnData['nullable'] = 'true';
+                }
+
+                if (isset($ormColumnData['nullable']) && \is_bool($ormColumnData['nullable'])) {
+                    $ormColumnData['nullable'] = $ormColumnData['nullable'] ? 'true' : 'false';
                 }
 
                 $phpDocType = static::TYPE_MAPPING[$fieldType] ?? $fieldType;
@@ -436,6 +440,15 @@ class DataModelGenerator
 
                 $class->setModifiers([]);
                 $class->setExtends('ServiceEntityRepository');
+
+                $class->setBody(MakeFactory::renderArrayAsString([
+                    'public function __construct(RegistryInterface $registry)',
+                    '{',
+                    [
+                        "parent::__construct(\$registry, {$entity->getName()}::class);",
+                    ],
+                    '}',
+                ]));
 
                 $factory = new MakeFactory($this->pathKernelRoot, $appNamespace, $class);
 
