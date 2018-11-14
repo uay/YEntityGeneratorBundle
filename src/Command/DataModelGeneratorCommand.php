@@ -2,13 +2,15 @@
 
 namespace Uay\YEntityGeneratorBundle\Command;
 
-use Symfony\Component\Console\Command\Command;
+use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\HttpKernel\KernelInterface;
 use Uay\YEntityGeneratorBundle\DataModelGenerator\DataModelGenerator;
+use Uay\YEntityGeneratorBundle\DataModelGenerator\InputModel;
+use Uay\YEntityGeneratorBundle\DependencyInjection\UayEntitiesExtension;
 
-class DataModelGeneratorCommand extends Command
+class DataModelGeneratorCommand extends ContainerAwareCommand
 {
     protected static $defaultName = 'entities:generate';
 
@@ -45,7 +47,13 @@ class DataModelGeneratorCommand extends Command
 
         $pathEntities = realpath($pathApplication . DIRECTORY_SEPARATOR . 'entities');
 
-        $generator = new DataModelGenerator($pathApplication, $pathEntities);
+        $container = $this->kernel->getContainer();
+        if ($container === null) {
+            throw new \RuntimeException('Container must not be null!');
+        }
+
+        $config = $container->getParameter(UayEntitiesExtension::PARAMETER_CONFIG);
+        $generator = new DataModelGenerator(new InputModel($config), $pathApplication, $pathEntities);
 
         $generator->read();
 

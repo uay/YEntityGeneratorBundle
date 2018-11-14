@@ -1,0 +1,6 @@
+services:
+  Uay\YEntityGeneratorBundle\Command\DataModelGeneratorCommand:
+    tags:
+      - { name: 'console.command', command: 'entities:generate' }
+    arguments:
+      ['@kernel']

@@ -14,7 +14,6 @@ use Symfony\Bridge\Doctrine\RegistryInterface;
 
 class DataModelGenerator
 {
-    public const FILE_ENTITIES = 'entities.md';
     public const DIRECTORY_GENERATED = 'generated' . DIRECTORY_SEPARATOR;
     public const FILE_PLANTTEXT = self::DIRECTORY_GENERATED . 'entities.txt';
     public const FILE_PLANTTEXT_IMAGE = self::DIRECTORY_GENERATED . 'entities.png';
@@ -25,6 +24,11 @@ class DataModelGenerator
         'boolean' => 'bool',
         'decimal' => 'float',
     ];
+
+    /**
+     * @var InputModel
+     */
+    protected $inputModel;
 
     /**
      * @var string
@@ -41,8 +45,9 @@ class DataModelGenerator
      */
     protected $entities = [];
 
-    public function __construct(string $pathApplication, string $pathEntities)
+    public function __construct(InputModel $inputModel, string $pathApplication, string $pathEntities)
     {
+        $this->inputModel = $inputModel;
         $this->pathApplication = $pathApplication;
         $this->pathEntities = $pathEntities;
     }
@@ -207,7 +212,7 @@ class DataModelGenerator
 
     public function read(): void
     {
-        $path = realpath($this->pathEntities . DIRECTORY_SEPARATOR . static::FILE_ENTITIES);
+        throw new \RuntimeException('Not implemented yet!');
 
         $rawEntities = $this->parseRawContent(file_get_contents($path));
 
