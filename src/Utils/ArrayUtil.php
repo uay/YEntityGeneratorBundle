@@ -60,4 +60,32 @@ abstract class ArrayUtil
 
         return static::getValueByPath($input, $path, $default);
     }
+
+    /**
+     * @param array $a
+     * @param array $b
+     * @return array
+     */
+    public static function fillRecursive(array $a, array $b): array
+    {
+        foreach ($a as $aKey => $aValue) {
+            if (!isset($b[$aKey])) {
+                continue;
+            }
+
+            $value = $b[$aKey];
+
+            if (\is_array($aValue)) {
+                if (!\is_array($value)) {
+                    continue;
+                }
+
+                $value = self::fillRecursive($aValue, $value);
+            }
+
+            $a[$aKey] = $value;
+        }
+
+        return $a;
+    }
 }

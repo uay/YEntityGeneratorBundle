@@ -41,16 +41,17 @@ class EntityClass
 
     /**
      * @param string $name
+     * @param string $basePath
      * @param string[] $imports
      * @param string[] $annotations
      */
-    public function __construct(string $name, array $imports = [], array $annotations = [])
+    public function __construct(string $name, string $basePath, array $imports = [], array $annotations = [])
     {
         $this->name = $name;
         $this->imports = $imports;
         $this->annotations = $annotations;
         $this->properties = [];
-        $this->basePath = '\\Entity\\Base';
+        $this->basePath = $basePath;
         $this->modifiers = [
             'abstract',
         ];
@@ -94,11 +95,6 @@ class EntityClass
     public function getBasePath(): string
     {
         return $this->basePath;
-    }
-
-    public function setBasePath(string $basePath): void
-    {
-        $this->basePath = $basePath;
     }
 
     /**

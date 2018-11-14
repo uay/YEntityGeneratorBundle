@@ -228,16 +228,15 @@ class DataModelGenerator
             $this->pathKernelRoot,
             'src',
             'Entity',
-            'Base',
+            $this->inputModel->getNamespace('base'),
         ]));
 
         $relationsToInverse = [];
 
         foreach ($this->entities as $entity) {
             if ($entity->getType() === Entity::TYPE_ENUM) {
-                $class = new EntityClass($entity->getName());
+                $class = new EntityClass($entity->getName(), '\\' . $this->inputModel->getNamespace('enum'));
 
-                $class->setBasePath('\\Enum');
                 $class->setModifiers([
                     'abstract',
                 ]);
@@ -251,7 +250,7 @@ class DataModelGenerator
                     $class->addProperty($property);
                 }
 
-                $factory = new MakeFactory($this->pathKernelRoot, $this->inputModel->getNamespace(), $class);
+                $factory = new MakeFactory($this->pathKernelRoot, $this->inputModel->getNamespace('app'), $class);
 
                 $factory->make(true);
 
@@ -317,9 +316,11 @@ class DataModelGenerator
                 $properties[$property->getName()] = $property;
             }
 
-            $appNamespace = $this->inputModel->getNamespace();
-            $entityNamespace = $appNamespace . '\\Entity\\Base';
-            $enumNamespace = $appNamespace . '\\Enum';
+            $appNamespace = $this->inputModel->getNamespace('app');
+            $entityNamespace = $appNamespace
+                . '\\' . $this->inputModel->getNamespace('entity')
+                . '\\' . $this->inputModel->getNamespace('base');
+            $enumNamespace = $appNamespace . '\\' . $this->inputModel->getNamespace('enum');
             foreach ($entity->getRelations() as $relation) {
                 $target = $relation->getTarget();
                 $targetEntity = $target->getEntity();
@@ -395,7 +396,9 @@ class DataModelGenerator
                 $properties[$property->getName()] = $property;
             }
 
-            $class = new EntityClass($entity->getName(), $imports);
+            $basePath = '\\' . $this->inputModel->getNamespace('entity')
+                . '\\' . $this->inputModel->getNamespace('base');
+            $class = new EntityClass($entity->getName(), $basePath, $imports);
 
             foreach ($properties as $property) {
                 $class->addProperty($property);
@@ -409,10 +412,10 @@ class DataModelGenerator
 
     protected function generateMissingEntities(): void
     {
-        $appNamespace = $this->inputModel->getNamespace();
-        $repositoryNamespace = $appNamespace . '\\Repository';
-        $entityNamespace = $appNamespace . '\\Entity';
-        $entityBaseNamespace = $entityNamespace . '\\Base';
+        $appNamespace = $this->inputModel->getNamespace('app');
+        $repositoryNamespace = $appNamespace . '\\' . $this->inputModel->getNamespace('repository');
+        $entityNamespace = $appNamespace . '\\' . $this->inputModel->getNamespace('entity');
+        $entityBaseNamespace = $entityNamespace . '\\' . $this->inputModel->getNamespace('base');
 
         foreach ($this->entities as $entity) {
             if ($entity->getType() !== Entity::TYPE_ENTITY) {
@@ -421,17 +424,16 @@ class DataModelGenerator
 
             $className = $entityNamespace . '\\' . $entity->getName();
             $classNameBase = $entityBaseNamespace . '\\' . $entity->getName();
-            $repository = $entity->getName() . 'Repository';
+            $repository = $entity->getName() . $this->inputModel->getClassPostfix('repository');
             $repositoryName = $repositoryNamespace . '\\' . $repository;
 
             if (!class_exists($repositoryName)) {
-                $class = new EntityClass($repository, [
+                $class = new EntityClass($repository, '\\' . $this->inputModel->getNamespace('repository'), [
                     ServiceEntityRepository::class,
                     RegistryInterface::class,
                     $className,
                 ]);
 
-                $class->setBasePath('\\Repository');
                 $class->setModifiers([]);
                 $class->setExtends('ServiceEntityRepository');
 
@@ -441,16 +443,15 @@ class DataModelGenerator
             }
 
             if (!class_exists($className)) {
-                $class = new EntityClass($entity->getName(), [
-                    $classNameBase . " as {$entity->getName()}Base",
+                $class = new EntityClass($entity->getName(), '\\' . $this->inputModel->getNamespace('entity'), [
+                    $classNameBase . " as {$entity->getName()}{$this->inputModel->getClassPostfix('entity')}",
                     'Doctrine\ORM\Mapping as ORM',
                 ], [
                     "@ORM\Entity(repositoryClass=\"{$repositoryName}\")",
                 ]);
 
-                $class->setBasePath('\\Entity');
                 $class->setModifiers([]);
-                $class->setExtends("{$entity->getName()}Base");
+                $class->setExtends($entity->getName() . $this->inputModel->getClassPostfix('entity'));
 
                 $factory = new MakeFactory($this->pathKernelRoot, $appNamespace, $class);
 

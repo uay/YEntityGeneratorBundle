@@ -6,17 +6,30 @@ use Uay\YEntityGeneratorBundle\Utils\ArrayUtil;
 
 class InputModel
 {
-    protected const CONFIG_KEY_NAMESPACE = 'namespace';
     protected const CONFIG_KEY_ENTITIES = 'entities';
     protected const CONFIG_REQUIRED_PATHS = [
-        'namespace' => self::CONFIG_KEY_NAMESPACE,
-        '$entitiesData' => self::CONFIG_KEY_ENTITIES,
+        'entitiesData' => self::CONFIG_KEY_ENTITIES,
     ];
 
+    protected const CONFIG_KEY_NAMESPACE = 'namespace';
+    protected const CONFIG_KEY_CLASS_POSTFIX = 'classPostfix';
+
     /**
-     * @var string
+     * @var array
      */
-    protected $namespace;
+    protected $configuration = [
+        self::CONFIG_KEY_NAMESPACE => [
+            'app' => 'App',
+            'base' => 'Base',
+            'enum' => 'Enum',
+            'entity' => 'Entity',
+            'repository' => 'Repository',
+        ],
+        self::CONFIG_KEY_CLASS_POSTFIX => [
+            'entity' => 'Base',
+            'repository' => 'Repository',
+        ],
+    ];
 
     /**
      * @var array
@@ -35,12 +48,34 @@ class InputModel
             $this->{$property} = ArrayUtil::getValueByPath($config, $requiredPath);
         }
 
-        $this->entitiesData = $config[static::CONFIG_KEY_ENTITIES];
+        $this->configuration = ArrayUtil::fillRecursive($this->configuration, $config);
     }
 
-    public function getNamespace(): string
+    protected function getConfigStringOrThrow(string $group, string $name): string
     {
-        return $this->namespace;
+        if (!isset($this->configuration[$group][$name])) {
+            throw new \RuntimeException("The configuration `$group.$name` is missing!");
+        }
+
+        return $this->configuration[$group][$name];
+    }
+
+    /**
+     * @param string $name
+     * @return string
+     */
+    public function getNamespace(string $name): string
+    {
+        return $this->getConfigStringOrThrow(static::CONFIG_KEY_NAMESPACE, $name);
+    }
+
+    /**
+     * @param string $name
+     * @return string
+     */
+    public function getClassPostfix(string $name): string
+    {
+        return $this->getConfigStringOrThrow(static::CONFIG_KEY_CLASS_POSTFIX, $name);
     }
 
     public function getEntitiesData(): array
