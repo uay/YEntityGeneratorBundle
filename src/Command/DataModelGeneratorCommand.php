@@ -44,7 +44,8 @@ class DataModelGeneratorCommand extends ContainerAwareCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $pathApplication = \dirname($this->kernel->getRootDir());
+        $pathKernelRoot = $this->kernel->getRootDir();
+        $pathApplication = \dirname($pathKernelRoot);
 
         $pathEntities = $pathApplication . DIRECTORY_SEPARATOR . 'entities';
 
@@ -58,7 +59,7 @@ class DataModelGeneratorCommand extends ContainerAwareCommand
         }
 
         $config = $container->getParameter(UayEntitiesExtension::PARAMETER_CONFIG);
-        $generator = new DataModelGenerator(new InputModel($config), $pathApplication, $pathEntities);
+        $generator = new DataModelGenerator(new InputModel($config), $pathKernelRoot, $pathEntities);
 
         $generator->read();
 

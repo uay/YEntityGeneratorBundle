@@ -6,7 +6,6 @@ use Uay\YEntityGeneratorBundle\Make\EntityClass;
 use Uay\YEntityGeneratorBundle\Make\MakeFactory;
 use Uay\YEntityGeneratorBundle\Make\EntityClassProperty;
 use Uay\YEntityGeneratorBundle\Utils\FileUtil;
-use Uay\YEntityGeneratorBundle\Utils\TextUtil;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -33,7 +32,7 @@ class DataModelGenerator
     /**
      * @var string
      */
-    protected $pathApplication;
+    protected $pathKernelRoot;
 
     /**
      * @var string
@@ -45,10 +44,10 @@ class DataModelGenerator
      */
     protected $entities = [];
 
-    public function __construct(InputModel $inputModel, string $pathApplication, string $pathEntities)
+    public function __construct(InputModel $inputModel, string $pathKernelRoot, string $pathEntities)
     {
         $this->inputModel = $inputModel;
-        $this->pathApplication = $pathApplication;
+        $this->pathKernelRoot = $pathKernelRoot;
         $this->pathEntities = $pathEntities;
     }
 
@@ -209,7 +208,7 @@ class DataModelGenerator
 
     public function read(): void
     {
-        $rawEntities = $this->inputModel->getRawEntities();
+        $rawEntities = $this->inputModel->getEntitiesData();
 
         $this->entities = $this->parse($rawEntities);
     }
@@ -223,21 +222,10 @@ class DataModelGenerator
         $plantTextGenerator->writeImage($this->pathEntities . DIRECTORY_SEPARATOR . static::FILE_PLANTTEXT_IMAGE);
     }
 
-    protected static function getFieldName(string $entity, string $relation): string
-    {
-        if ($relation === EntityRelationPoint::RELATION_MANY) {
-            $fieldSize = 999;
-        } else {
-            $fieldSize = 1;
-        }
-
-        return TextUtil::pluralize($fieldSize, lcfirst($entity));
-    }
-
     protected function generateBaseEntities(): void
     {
         FileUtil::removeRecursive(implode(DIRECTORY_SEPARATOR, [
-            $this->pathApplication,
+            $this->pathKernelRoot,
             'src',
             'Entity',
             'Base',
@@ -263,7 +251,7 @@ class DataModelGenerator
                     $class->addProperty($property);
                 }
 
-                $factory = new MakeFactory($class);
+                $factory = new MakeFactory($this->pathKernelRoot, $this->inputModel->getNamespace(), $class);
 
                 $factory->make(true);
 
@@ -292,79 +280,79 @@ class DataModelGenerator
                 '@ORM\Column(type="integer")',
             ]);
 
-            var_dump($entity->getFields());
-            die;
-
             foreach ($entity->getFields() as $field) {
-                // TODO: use raw data
-                $type = $field->getType();
+                $fieldType = $field->getType();
 
-                $ormColumnData = [
-                    "type=\"{$type}\"",
-                ];
+                if ($fieldType === EntityField::TYPE_ENUM) {
+                    $fieldType = $field->getValue();
 
-                if ($field->getSize() !== null) {
-                    $ormColumnData[] = "length={$field->getSize()}";
-                }
+                    $ormColumnData = [
+                        // TODO: also support strings, etc.
+                        'type' => 'integer',
+                    ];
+                } else {
+                    $ormColumnData = $field->getRawData() ?? [];
 
-                if ($type === 'decimal') {
-                    $ormColumnData[] = 'precision=' . ($field->getSize() ?: 20);
-                    $ormColumnData[] = 'scale=10';
-                }
-
-                if ($field->isNullable()) {
-                    $ormColumnData[] = 'nullable=true';
-                }
-
-                if (isset(static::TYPE_MAPPING[$type])) {
-                    $type = static::TYPE_MAPPING[$type];
+                    $ormColumnData['type'] = json_encode($fieldType);
                 }
 
                 if ($field->isNullable()) {
-                    $type .= '|null';
+                    $ormColumnData['nullable'] = 'true';
                 }
 
-                $property = new EntityClassProperty($field->getName(), $type, null, [
+                $phpDocType = static::TYPE_MAPPING[$fieldType] ?? $fieldType;
+
+                if ($field->isNullable()) {
+                    $phpDocType .= '|null';
+                }
+
+                $ormColumnData = array_map(function (string $key, string $value) {
+                    return "{$key}={$value}";
+                }, array_keys($ormColumnData), $ormColumnData);
+
+                $property = new EntityClassProperty($field->getName(), $phpDocType, null, [
                     '@ORM\Column(' . implode(', ', $ormColumnData) . ')',
                 ]);
 
                 $properties[$property->getName()] = $property;
             }
 
-            $appNamespace = MakeFactory::getAppNamespace();
+            $appNamespace = $this->inputModel->getNamespace();
             $entityNamespace = $appNamespace . '\\Entity\\Base';
             $enumNamespace = $appNamespace . '\\Enum';
             foreach ($entity->getRelations() as $relation) {
+                $target = $relation->getTarget();
+                $targetEntity = $target->getEntity();
+                $targetName = $target->getName();
                 $targetRelation = $relation->getTarget()->getRelation();
+                $source = $relation->getSource();
+                $sourceName = $source->getName();
+                $sourceRelation = $source->getRelation();
 
                 $targetNamespace = $targetRelation === EntityRelationPoint::RELATION_ENUM
                     ? $enumNamespace
                     : $entityNamespace;
-                $target = $relation->getTarget();
 
-                if (!isset($imports[$target])) {
-                    $imports[$target] = $targetNamespace . '\\' . $target;
-                } elseif ($imports[$target] !== $targetNamespace . '\\' . $target) {
+                if (!isset($imports[$targetEntity])) {
+                    $imports[$targetEntity] = $targetNamespace . '\\' . $targetEntity;
+                } elseif ($imports[$targetEntity] !== $targetNamespace . '\\' . $targetEntity) {
                     throw new \RuntimeException('Import conflict!');
                 }
 
-                $fieldNameSource = static::getFieldName($relation->getSource(), $relation->getSourceRelation());
-                $fieldNameTarget = static::getFieldName($target, $targetRelation);
-
                 if ($targetRelation === EntityRelationPoint::RELATION_ENUM) {
-                    $property = new EntityClassProperty($fieldNameTarget, 'int|null', null, [
+                    $property = new EntityClassProperty($targetName, 'int|null', null, [
                         '@ORM\Column(type="integer", nullable=true)',
-                        "@see {$target}",
+                        "@see {$targetEntity}",
                     ]);
 
                     $properties[$property->getName()] = $property;
                     continue;
                 }
 
-                $ormRelation = ucfirst($relation->getSourceRelation()) . 'To' . ucfirst($targetRelation);
+                $ormRelation = ucfirst($sourceRelation) . 'To' . ucfirst($targetRelation);
 
                 $ormColumnData = [
-                    "targetEntity=\"{$target}\"",
+                    "targetEntity=\"{$targetEntity}\"",
                 ];
 
                 switch ($ormRelation) {
@@ -386,9 +374,9 @@ class DataModelGenerator
                     default:
                         throw new \RuntimeException("Unexpected relation '{$ormRelation}'!");
                 }
-                $ormColumnData[] = "{$mappingType}=\"{$fieldNameSource}\"";
+                $ormColumnData[] = "{$mappingType}=\"{$sourceName}\"";
 
-                $type = $target;
+                $type = $targetEntity;
 
                 if ($targetRelation === EntityRelationPoint::RELATION_MANY) {
                     $type .= '[]|Collection';
@@ -400,7 +388,7 @@ class DataModelGenerator
                     $defaultValue = 'new ArrayCollection()';
                 }
 
-                $property = new EntityClassProperty($fieldNameTarget, $type, $defaultValue, [
+                $property = new EntityClassProperty($targetName, $type, $defaultValue, [
                     "@ORM\\$ormRelation(" . implode(', ', $ormColumnData) . ')',
                 ]);
 
@@ -413,7 +401,7 @@ class DataModelGenerator
                 $class->addProperty($property);
             }
 
-            $factory = new MakeFactory($class);
+            $factory = new MakeFactory($this->pathKernelRoot, $appNamespace, $class);
 
             $factory->make();
         }
@@ -421,7 +409,7 @@ class DataModelGenerator
 
     protected function generateMissingEntities(): void
     {
-        $appNamespace = MakeFactory::getAppNamespace();
+        $appNamespace = $this->inputModel->getNamespace();
         $repositoryNamespace = $appNamespace . '\\Repository';
         $entityNamespace = $appNamespace . '\\Entity';
         $entityBaseNamespace = $entityNamespace . '\\Base';
@@ -447,7 +435,7 @@ class DataModelGenerator
                 $class->setModifiers([]);
                 $class->setExtends('ServiceEntityRepository');
 
-                $factory = new MakeFactory($class);
+                $factory = new MakeFactory($this->pathKernelRoot, $appNamespace, $class);
 
                 $factory->make(false);
             }
@@ -464,7 +452,7 @@ class DataModelGenerator
                 $class->setModifiers([]);
                 $class->setExtends("{$entity->getName()}Base");
 
-                $factory = new MakeFactory($class);
+                $factory = new MakeFactory($this->pathKernelRoot, $appNamespace, $class);
 
                 $factory->make(false);
             }

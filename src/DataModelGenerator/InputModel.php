@@ -6,31 +6,45 @@ use Uay\YEntityGeneratorBundle\Utils\ArrayUtil;
 
 class InputModel
 {
+    protected const CONFIG_KEY_NAMESPACE = 'namespace';
     protected const CONFIG_KEY_ENTITIES = 'entities';
     protected const CONFIG_REQUIRED_PATHS = [
-        self::CONFIG_KEY_ENTITIES,
+        'namespace' => self::CONFIG_KEY_NAMESPACE,
+        '$entitiesData' => self::CONFIG_KEY_ENTITIES,
     ];
+
+    /**
+     * @var string
+     */
+    protected $namespace;
 
     /**
      * @var array
      */
-    protected $rawEntities = [];
+    protected $entitiesData = [];
 
     public function __construct(array $config)
     {
         $paths = ArrayUtil::getPathsRecursive($config);
 
-        foreach (static::CONFIG_REQUIRED_PATHS as $requiredPath) {
+        foreach (static::CONFIG_REQUIRED_PATHS as $property => $requiredPath) {
             if (!\in_array($requiredPath, $paths, true)) {
                 throw new \RuntimeException("The path `$requiredPath` is missing in yaml configuration!");
             }
+
+            $this->{$property} = ArrayUtil::getValueByPath($config, $requiredPath);
         }
 
-        $this->rawEntities = $config[static::CONFIG_KEY_ENTITIES];
+        $this->entitiesData = $config[static::CONFIG_KEY_ENTITIES];
     }
 
-    public function getRawEntities(): array
+    public function getNamespace(): string
     {
-        return $this->rawEntities;
+        return $this->namespace;
+    }
+
+    public function getEntitiesData(): array
+    {
+        return $this->entitiesData;
     }
 }

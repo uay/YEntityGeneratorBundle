@@ -23,26 +23,15 @@ class MakeFactory
      */
     protected $namespacePath;
 
-    public static function getAppNamespace(): string
-    {
-        $idx = strrpos(__NAMESPACE__, '\\Make');
-
-        if ($idx === false) {
-            throw new \RuntimeException('Invalid namespace!');
-        }
-
-        return substr(__NAMESPACE__, 0, $idx);
-    }
-
-    public function __construct(EntityClass $class)
+    public function __construct(string $kernelRootPath, string $namespace, EntityClass $class)
     {
         $this->class = $class;
 
-        $this->namespace = static::getAppNamespace() . $this->class->getBasePath();
+        $basePath = $this->class->getBasePath();
 
-        $this->namespacePath = __DIR__ . '\\..' . $this->class->getBasePath();
-        $this->namespacePath = str_replace('\\', '/', $this->namespacePath);
-        $this->namespacePath = str_replace('/', DIRECTORY_SEPARATOR, $this->namespacePath);
+        $this->namespace = $namespace . $basePath;
+
+        $this->namespacePath = $kernelRootPath . DIRECTORY_SEPARATOR . $basePath;
         if (!file_exists($this->namespacePath)
             && !mkdir($concurrentDirectory = $this->namespacePath, 0777, true) && !is_dir($concurrentDirectory)) {
             throw new \RuntimeException(sprintf('Directory "%s" was not created', $concurrentDirectory));
