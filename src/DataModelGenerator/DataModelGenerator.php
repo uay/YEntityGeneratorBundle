@@ -279,6 +279,10 @@ class DataModelGenerator
                 '@ORM\Column(type="integer")',
             ]);
 
+            $appNamespace = $this->inputModel->getNamespace('app');
+            $entityNamespace = $appNamespace . '\\' . $this->inputModel->getNamespace('entity');
+            $enumNamespace = $appNamespace . '\\' . $this->inputModel->getNamespace('enum');
+
             foreach ($entity->getFields() as $field) {
                 $fieldType = $field->getType();
 
@@ -289,6 +293,13 @@ class DataModelGenerator
                         // TODO: also support strings, etc.
                         'type' => '"integer"',
                     ];
+
+                    $fieldTypeImport = $enumNamespace . '\\' . $fieldType;
+                    if (!isset($imports[$fieldType])) {
+                        $imports[$fieldType] = $fieldTypeImport;
+                    } elseif ($imports[$fieldType] !== $fieldTypeImport) {
+                        throw new \RuntimeException('Import conflict!');
+                    }
                 } else {
                     $ormColumnData = $field->getRawData() ?? [];
 
@@ -320,11 +331,6 @@ class DataModelGenerator
                 $properties[$property->getName()] = $property;
             }
 
-            $appNamespace = $this->inputModel->getNamespace('app');
-            $entityNamespace = $appNamespace
-                . '\\' . $this->inputModel->getNamespace('entity')
-                . '\\' . $this->inputModel->getNamespace('base');
-            $enumNamespace = $appNamespace . '\\' . $this->inputModel->getNamespace('enum');
             foreach ($entity->getRelations() as $relation) {
                 $target = $relation->getTarget();
                 $targetEntity = $target->getEntity();
@@ -338,9 +344,10 @@ class DataModelGenerator
                     ? $enumNamespace
                     : $entityNamespace;
 
+                $targetEntityImport = $targetNamespace . '\\' . $targetEntity;
                 if (!isset($imports[$targetEntity])) {
-                    $imports[$targetEntity] = $targetNamespace . '\\' . $targetEntity;
-                } elseif ($imports[$targetEntity] !== $targetNamespace . '\\' . $targetEntity) {
+                    $imports[$targetEntity] = $targetEntityImport;
+                } elseif ($imports[$targetEntity] !== $targetEntityImport) {
                     throw new \RuntimeException('Import conflict!');
                 }
 
@@ -402,7 +409,7 @@ class DataModelGenerator
 
             $basePath = '\\' . $this->inputModel->getNamespace('entity')
                 . '\\' . $this->inputModel->getNamespace('base');
-            $class = new EntityClass($entity->getName(), $basePath, $imports);
+            $class = new EntityClass($entity->getName() . $this->inputModel->getClassPostfix('entity'), $basePath, $imports);
 
             foreach ($properties as $property) {
                 $class->addProperty($property);
@@ -456,15 +463,23 @@ class DataModelGenerator
             }
 
             if (!class_exists($className)) {
-                $class = new EntityClass($entity->getName(), '\\' . $this->inputModel->getNamespace('entity'), [
-                    $classNameBase . " as {$entity->getName()}{$this->inputModel->getClassPostfix('entity')}",
+                $imports = [
                     'Doctrine\ORM\Mapping as ORM',
-                ], [
+                ];
+
+                $classPostfix = $this->inputModel->getClassPostfix('entity');
+                $generatedClassName = $entity->getName() . $classPostfix;
+                $aliasClassName = $entity->getName() . 'Generated';
+
+                $imports[] = $classNameBase . $classPostfix .
+                    (($aliasClassName !== $generatedClassName) ? " as {$aliasClassName}" : '');
+
+                $class = new EntityClass($entity->getName(), '\\' . $this->inputModel->getNamespace('entity'), $imports, [
                     "@ORM\Entity(repositoryClass=\"{$repositoryName}\")",
                 ]);
 
                 $class->setModifiers([]);
-                $class->setExtends($entity->getName() . $this->inputModel->getClassPostfix('entity'));
+                $class->setExtends($aliasClassName);
 
                 $factory = new MakeFactory($this->pathKernelRoot, $appNamespace, $class);
 

@@ -8,6 +8,10 @@ for your Symfony applications with unprecedented simplicity.
 
 TODO
 
+TODO: implement base entities and base repositories
+
+TODO
+
 License
 -------
 
