@@ -101,25 +101,25 @@ Call `php bin/console entities:generate` to generate the entities from `uay_enti
 
 ## Installation
 
-Add the repository:
+Add the repository (to the `composer.json` file): 
 ```json
+{
   "repositories": [
-    // ...
     {
       "type": "vcs",
       "url": "https://github.com/uay/YEntityGeneratorBundle"
-    },
-    // ...
-  ],
+    }
+  ]
+}
 ```
 
-And add the package to `require-dev` and replace `<version>` with the current version:
+And add the package to `require-dev` and replace `<version>` with the current version: 
 ```json
+{
   "require-dev": {
-    // ...
     "uay/y-entity-generator-bundle": "<version>",
-    // ...
-  },
+  }
+}
 ```
 
 
