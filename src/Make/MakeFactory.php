@@ -249,8 +249,10 @@ class MakeFactory
                 continue;
             }
 
-            $propertyName = ucfirst($property->getName());
-            $propertyType = static::parseReturnType($property->getType());
+            $propertyNameOriginal = $property->getName();
+            $propertyTypeOriginal = $property->getType();
+            $propertyName = ucfirst($propertyNameOriginal);
+            $propertyType = static::parseReturnType($propertyTypeOriginal);
 
             $getterReturnType = $propertyType !== null ? ": {$propertyType}" : '';
             $setterParameterType = $propertyType !== null ? "{$propertyType} " : '';
@@ -258,24 +260,24 @@ class MakeFactory
             // GETTER
             if ($propertyType === null) {
                 $lines[] = '/**';
-                $lines[] = " * @return {$property->getType()}";
+                $lines[] = " * @return {$propertyTypeOriginal}";
                 $lines[] = ' */';
             }
             $lines[] = "public function get{$propertyName}(){$getterReturnType}";
             $lines[] = '{';
-            $lines[] = static::FILE_INTEND . "return \$this->{$property->getName()};";
+            $lines[] = static::FILE_INTEND . "return \$this->{$propertyNameOriginal};";
             $lines[] = '}';
             $lines[] = '';
 
             // SETTER
             if ($propertyType === null) {
                 $lines[] = '/**';
-                $lines[] = " * @param {$property->getType()} \${$property->getName()}";
+                $lines[] = " * @param {$propertyTypeOriginal} \${$propertyNameOriginal}";
                 $lines[] = ' */';
             }
-            $lines[] = "public function set{$propertyName}({$setterParameterType}\${$property->getName()}): void";
+            $lines[] = "public function set{$propertyName}({$setterParameterType}\${$propertyNameOriginal}): void";
             $lines[] = '{';
-            $lines[] = static::FILE_INTEND . "\$this->{$property->getName()} = \${$property->getName()};";
+            $lines[] = static::FILE_INTEND . "\$this->{$propertyNameOriginal} = \${$propertyNameOriginal};";
             $lines[] = '}';
             $lines[] = '';
         }
