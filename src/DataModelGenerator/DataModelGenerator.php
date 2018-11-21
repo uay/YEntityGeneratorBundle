@@ -449,6 +449,10 @@ class DataModelGenerator
                     $defaultValue = 'new ArrayCollection()';
                 }
 
+                if ($defaultValue === 'null') {
+                    $phpDocType .= '|null';
+                }
+
                 $property = new EntityClassProperty($targetName, $phpDocType, $defaultValue, [
                     "@ORM\\$ormRelation(" . implode(', ', $ormColumnData) . ')',
                 ]);
