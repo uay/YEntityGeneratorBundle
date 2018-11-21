@@ -87,7 +87,7 @@ class DataModelGenerator
         $type = $rawField['type'];
 
         $size = $rawField['size'] ?? null;
-        $nullable = ($rawField['size'] ?? 'false') === 'true';
+        $nullable = ($rawField['nullable'] ?? 'false') === 'true';
         $modifier = $rawField['modifier'] ?? EntityField::MODIFIER_PROTECTED;
         $value = $rawField['value'] ?? $rawField['target'] ?? null;
 
