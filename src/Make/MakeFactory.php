@@ -228,6 +228,8 @@ class MakeFactory
                 continue;
             }
 
+            $defaultValuePostfix = str_replace('"', '\'', $defaultValuePostfix);
+
             $lines[] = static::FILE_INTEND . "\$this->{$property->getName()} = {$defaultValuePostfix};";
         }
 
