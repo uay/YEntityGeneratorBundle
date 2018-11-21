@@ -290,8 +290,7 @@ class DataModelGenerator
                     $fieldType = $field->getValue();
 
                     $ormColumnData = [
-                        // TODO: also support strings, etc.
-                        'type' => '"integer"',
+                        'type' => 'integer',
                     ];
 
                     $fieldTypeImport = $enumNamespace . '\\' . $fieldType;
@@ -303,19 +302,27 @@ class DataModelGenerator
                 } else {
                     $ormColumnData = $field->getRawData() ?? [];
 
-                    $ormColumnData['type'] = json_encode($fieldType);
+                    $ormColumnData['type'] = $fieldType;
                 }
 
                 if ($field->isNullable()) {
-                    $ormColumnData['nullable'] = 'true';
+                    $ormColumnData['nullable'] = true;
+                } else {
+                    $ormColumnData['nullable'] = false;
                 }
 
                 foreach ($ormColumnData as $key => $value) {
-                    if (!\is_bool($value)) {
+                    if (\is_bool($value)) {
+                        $ormColumnData[$key] = $value ? 'true' : 'false';
+
                         continue;
                     }
 
-                    $ormColumnData[$key] = $value ? 'true' : 'false';
+                    if ($value === 'true' || $value === 'false') {
+                        continue;
+                    }
+
+                    $ormColumnData[$key] = json_encode($value);
                 }
 
                 $phpDocType = static::TYPE_MAPPING[$fieldType] ?? $fieldType;
