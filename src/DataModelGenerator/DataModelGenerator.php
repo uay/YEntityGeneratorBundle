@@ -310,8 +310,12 @@ class DataModelGenerator
                     $ormColumnData['nullable'] = 'true';
                 }
 
-                if (isset($ormColumnData['nullable']) && \is_bool($ormColumnData['nullable'])) {
-                    $ormColumnData['nullable'] = $ormColumnData['nullable'] ? 'true' : 'false';
+                foreach ($ormColumnData as $key => $value) {
+                    if (!\is_bool($value)) {
+                        continue;
+                    }
+
+                    $ormColumnData[$key] = $value ? 'true' : 'false';
                 }
 
                 $phpDocType = static::TYPE_MAPPING[$fieldType] ?? $fieldType;
