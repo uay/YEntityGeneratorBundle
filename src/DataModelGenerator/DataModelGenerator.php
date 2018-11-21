@@ -355,7 +355,7 @@ class DataModelGenerator
                     return "{$key}={$value}";
                 }, array_keys($ormColumnData), $ormColumnData);
 
-                $defaultValue = json_encode($field->getValue());
+                $defaultValue = $field->getValue();
 
                 if ($defaultValue === 'null') {
                     $defaultValue = null;
