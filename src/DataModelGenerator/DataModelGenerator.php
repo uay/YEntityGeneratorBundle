@@ -17,8 +17,8 @@ class DataModelGenerator
     public const FILE_PLANTTEXT = self::DIRECTORY_GENERATED . 'entities.txt';
     public const FILE_PLANTTEXT_IMAGE = self::DIRECTORY_GENERATED . 'entities.png';
 
-    public const TYPE_MAPPING = [
-        'datetime' => \DateTime::class,
+    protected const TYPE_MAPPING = [
+        'datetime' => '\\' . \DateTime::class,
         'integer' => 'int',
         'boolean' => 'bool',
         'decimal' => 'float',
