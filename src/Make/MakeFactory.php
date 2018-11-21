@@ -254,7 +254,8 @@ class MakeFactory
             $propertyName = ucfirst($propertyNameOriginal);
             $propertyType = static::parseReturnType($propertyTypeOriginal);
 
-            $getterReturnType = $propertyType !== null ? ": {$propertyType}" : '';
+            $nullableIds = $propertyNameOriginal === 'id' ? '?' : '';
+            $getterReturnType = $propertyType !== null ? ": {$nullableIds}{$propertyType}" : '';
             $setterParameterType = $propertyType !== null ? "{$propertyType} " : '';
 
             // GETTER

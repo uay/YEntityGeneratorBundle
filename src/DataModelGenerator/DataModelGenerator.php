@@ -291,7 +291,7 @@ class DataModelGenerator
             /** @var EntityClassProperty[] $properties */
             $properties = [];
 
-            $properties[] = new EntityClassProperty('id', 'int|null', null, [
+            $properties[] = new EntityClassProperty('id', 'int', null, [
                 '@ORM\Id()',
                 '@ORM\GeneratedValue()',
                 '@ORM\Column(type="integer")',
