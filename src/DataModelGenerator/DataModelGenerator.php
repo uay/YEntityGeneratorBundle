@@ -394,6 +394,8 @@ class DataModelGenerator
                 }
 
                 if ($targetRelation === EntityRelationPoint::RELATION_ENUM) {
+
+                    // TODO: implement default value and nullable
                     $property = new EntityClassProperty($targetName, 'int|null', null, [
                         '@ORM\Column(type="integer", nullable=true)',
                         "@see {$targetEntity}",
