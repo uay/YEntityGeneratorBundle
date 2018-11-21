@@ -437,10 +437,10 @@ class DataModelGenerator
                 }
                 $ormColumnData[] = "{$mappingType}=\"{$sourceName}\"";
 
-                $type = $targetEntity;
+                $phpDocType = $targetEntity;
 
                 if ($targetRelation === EntityRelationPoint::RELATION_MANY) {
-                    $type .= '[]|Collection';
+                    $phpDocType .= '[]|Collection';
                 }
 
                 $defaultValue = 'null';
@@ -449,7 +449,7 @@ class DataModelGenerator
                     $defaultValue = 'new ArrayCollection()';
                 }
 
-                $property = new EntityClassProperty($targetName, $type, $defaultValue, [
+                $property = new EntityClassProperty($targetName, $phpDocType, $defaultValue, [
                     "@ORM\\$ormRelation(" . implode(', ', $ormColumnData) . ')',
                 ]);
 
