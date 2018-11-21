@@ -24,6 +24,15 @@ class DataModelGenerator
         'decimal' => 'float',
     ];
 
+    protected const TYPE_DEFAULT_VALUE = '0';
+    protected const TYPE_DEFAULT_VALUES_MAPPING = [
+        'string' => '\'\'',
+        'datetime' => 'new \DateTime()',
+        'integer' => '0',
+        'boolean' => 'false',
+        'decimal' => '0',
+    ];
+
     /**
      * @var InputModel
      */
@@ -222,6 +231,15 @@ class DataModelGenerator
         $plantTextGenerator->writeImage($this->pathEntities . DIRECTORY_SEPARATOR . static::FILE_PLANTTEXT_IMAGE);
     }
 
+    protected static function filterOrmColumnData(array &$ormColumnData): array
+    {
+        if (array_key_exists('value', $ormColumnData)) {
+            unset($ormColumnData['value']);
+        }
+
+        return $ormColumnData;
+    }
+
     protected function generateBaseEntities(): void
     {
         FileUtil::removeRecursive(implode(DIRECTORY_SEPARATOR, [
@@ -305,6 +323,8 @@ class DataModelGenerator
                     $ormColumnData['type'] = $fieldType;
                 }
 
+                $ormColumnData = static::filterOrmColumnData($ormColumnData);
+
                 if ($field->isNullable()) {
                     $ormColumnData['nullable'] = true;
                 } else {
@@ -335,7 +355,18 @@ class DataModelGenerator
                     return "{$key}={$value}";
                 }, array_keys($ormColumnData), $ormColumnData);
 
-                $property = new EntityClassProperty($field->getName(), $phpDocType, null, [
+                $defaultValue = json_encode($field->getValue());
+
+                if ($defaultValue === 'null') {
+                    $defaultValue = null;
+                }
+
+                if ($defaultValue === null && !$field->isNullable()) {
+                    $defaultValue = static::TYPE_DEFAULT_VALUES_MAPPING[$fieldType]
+                        ?? static::TYPE_DEFAULT_VALUE;
+                }
+
+                $property = new EntityClassProperty($field->getName(), $phpDocType, $defaultValue, [
                     '@ORM\Column(' . implode(', ', $ormColumnData) . ')',
                 ]);
 
