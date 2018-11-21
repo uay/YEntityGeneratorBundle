@@ -222,13 +222,13 @@ class MakeFactory
                 continue;
             }
 
-            $defaultValue = preg_replace(static::FILTER_VALUE, '', $property->getDefault());
+            $defaultValuePostfix = $property->getDefault();
 
-            if ($defaultValue === '') {
-                $defaultValue = 'null';
+            if ($defaultValuePostfix === null) {
+                continue;
             }
 
-            $lines[] = static::FILE_INTEND . "\$this->{$property->getName()} = {$defaultValue};";
+            $lines[] = static::FILE_INTEND . "\$this->{$property->getName()} = {$defaultValuePostfix};";
         }
 
         $lines[] = '}';
