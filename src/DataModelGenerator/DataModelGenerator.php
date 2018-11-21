@@ -16,6 +16,8 @@ class DataModelGenerator
     public const DIRECTORY_GENERATED = 'generated' . DIRECTORY_SEPARATOR;
     public const FILE_PLANTTEXT = self::DIRECTORY_GENERATED . 'entities.txt';
     public const FILE_PLANTTEXT_IMAGE = self::DIRECTORY_GENERATED . 'entities.png';
+    protected const BOOL_TRUE = 'true';
+    protected const BOOL_FALSE = 'false';
 
     protected const TYPE_MAPPING = [
         'datetime' => '\\' . \DateTime::class,
@@ -29,7 +31,7 @@ class DataModelGenerator
         'string' => '\'\'',
         'datetime' => 'new \DateTime()',
         'integer' => '0',
-        'boolean' => 'false',
+        'boolean' => self::BOOL_FALSE,
         'decimal' => '0',
     ];
 
@@ -96,7 +98,7 @@ class DataModelGenerator
         $type = $rawField['type'];
 
         $size = $rawField['size'] ?? null;
-        $nullable = ($nullable = $rawField['nullable'] ?? false) || $nullable === 'true';
+        $nullable = ($nullable = $rawField['nullable'] ?? false) || $nullable === static::BOOL_TRUE;
         if (!\is_bool($nullable)) {
             $nullable = false;
         }
@@ -336,12 +338,12 @@ class DataModelGenerator
 
                 foreach ($ormColumnData as $key => $value) {
                     if (\is_bool($value)) {
-                        $ormColumnData[$key] = $value ? 'true' : 'false';
+                        $ormColumnData[$key] = $value ? static::BOOL_TRUE : static::BOOL_FALSE;
 
                         continue;
                     }
 
-                    if ($value === 'true' || $value === 'false') {
+                    if ($value === static::BOOL_TRUE || $value === static::BOOL_FALSE) {
                         continue;
                     }
 
