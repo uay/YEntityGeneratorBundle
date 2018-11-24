@@ -19,20 +19,58 @@ class DataModelGenerator
     protected const BOOL_TRUE = 'true';
     protected const BOOL_FALSE = 'false';
 
+    protected const PHP_TYPE_INT = 'int';
+    protected const PHP_TYPE_STRING = 'string';
+    protected const PHP_TYPE_FLOAT = 'float';
+    protected const PHP_TYPE_RESOURCE = 'resource';
+    protected const PHP_TYPE_BOOL = 'bool';
+    protected const PHP_TYPE_DATETIME = '\\' . \DateTime::class;
+    protected const PHP_TYPE_DATETIME_IMMUTABLE = '\\' . \DateTimeImmutable::class;
+    protected const PHP_TYPE_DATEINTERVAL = '\\' . \DateInterval::class;
+    protected const PHP_TYPE_ARRAY = 'array';
+    protected const PHP_TYPE_OBJECT = 'object';
+
     protected const TYPE_MAPPING = [
-        'datetime' => '\\' . \DateTime::class,
-        'integer' => 'int',
-        'boolean' => 'bool',
-        'decimal' => 'float',
+        // https://www.doctrine-project.org/projects/doctrine-dbal/en/2.8/reference/types.html
+        'smallint' => self::PHP_TYPE_INT,
+        'integer' => self::PHP_TYPE_INT,
+        'bigint' => self::PHP_TYPE_STRING,
+        'decimal' => self::PHP_TYPE_STRING,
+        'float' => self::PHP_TYPE_FLOAT,
+        'string' => self::PHP_TYPE_STRING,
+        'text' => self::PHP_TYPE_STRING,
+        'guid' => self::PHP_TYPE_STRING,
+        'binary' => self::PHP_TYPE_RESOURCE,
+        'blob' => self::PHP_TYPE_RESOURCE,
+        'boolean' => self::PHP_TYPE_BOOL,
+        'date' => self::PHP_TYPE_DATETIME,
+        'date_immutable' => self::PHP_TYPE_DATETIME_IMMUTABLE,
+        'datetime' => self::PHP_TYPE_DATETIME,
+        'datetime_immutable' => self::PHP_TYPE_DATETIME_IMMUTABLE,
+        'datetimetz' => self::PHP_TYPE_DATETIME,
+        'datetimetz_immutable' => self::PHP_TYPE_DATETIME_IMMUTABLE,
+        'time' => self::PHP_TYPE_DATETIME,
+        'time_immutable' => self::PHP_TYPE_DATETIME_IMMUTABLE,
+        'dateinterval' => self::PHP_TYPE_DATEINTERVAL,
+        'array' => self::PHP_TYPE_ARRAY,
+        'simple_array' => self::PHP_TYPE_ARRAY,
+        'json' => self::PHP_TYPE_ARRAY,
+        'json_array' => self::PHP_TYPE_ARRAY,
+        'object' => self::PHP_TYPE_OBJECT,
     ];
 
     protected const TYPE_DEFAULT_VALUE = '0';
     protected const TYPE_DEFAULT_VALUES_MAPPING = [
-        'string' => '\'\'',
-        'datetime' => 'new \DateTime()',
-        'integer' => '0',
-        'boolean' => self::BOOL_FALSE,
-        'decimal' => '0',
+        self::PHP_TYPE_INT => '0',
+        self::PHP_TYPE_STRING => '\'\'',
+        self::PHP_TYPE_FLOAT => '0.0',
+        self::PHP_TYPE_RESOURCE => 'null',
+        self::PHP_TYPE_BOOL => self::BOOL_FALSE,
+        self::PHP_TYPE_DATETIME => 'new ' . self::PHP_TYPE_DATETIME . '()',
+        self::PHP_TYPE_DATETIME_IMMUTABLE => 'new ' . self::PHP_TYPE_DATETIME_IMMUTABLE . '()',
+        self::PHP_TYPE_DATEINTERVAL => 'new ' . self::PHP_TYPE_DATEINTERVAL . '()',
+        self::PHP_TYPE_ARRAY => '[]',
+        self::PHP_TYPE_OBJECT => 'null',
     ];
 
     /**
@@ -367,7 +405,7 @@ class DataModelGenerator
                 }
 
                 if ($defaultValue === null && !$field->isNullable()) {
-                    $defaultValue = static::TYPE_DEFAULT_VALUES_MAPPING[$fieldType]
+                    $defaultValue = static::TYPE_DEFAULT_VALUES_MAPPING[$phpDocType]
                         ?? static::TYPE_DEFAULT_VALUE;
                 }
 
