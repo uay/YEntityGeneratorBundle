@@ -122,6 +122,27 @@ And add the package to `require-dev` and replace `<version>` with the current ve
 }
 ```
 
+## Configuration
+
+```yaml
+uay_entities:
+  entities:                     # Define your entities here like in the example above
+    # ...
+  uml:                          # Define your uml settings here
+    valid: false                # By default the generated uml is not valid, change this here
+  namespace:                    # Define your namespace settings here
+    app: App
+    base: Generated
+    enum: Enum
+    entity: Entity
+    repository: Repository
+  classPostfix:                 # Define your class postfixes here
+    entity: Generated
+    repository: Repository
+  fixtures:                     # Define your doctrine fixtures data here
+    # ...
+    # ATTENTION: This is not implemented yet!
+```
 
 ## Features
 
