@@ -184,20 +184,11 @@ class DataModelGenerator
                     $field = new EntityField();
 
                     $value = $rawField;
-                    if (\is_string($value)) {
-                        $type = EntityField::TYPE_STRING;
-                    } else if (\is_numeric($value)) {
-                        $type = EntityField::TYPE_INTEGER;
-                    } else if (\is_bool($value)) {
-                        $type = EntityField::TYPE_BOOLEAN;
-                    } else {
-                        $type = EntityField::TYPE_UNKNOWN;
-                    }
 
                     $field->setName($fieldName);
-                    $field->setType($type);
+                    $field->setType(EntityField::parseType($value));
                     $field->setModifier(EntityField::MODIFIER_PUBLIC);
-                    $field->setValue(json_encode($value));
+                    $field->setValue(EntityField::parseValue($value));
 
                     $fields[$field->getName()] = $field;
                     continue;

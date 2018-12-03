@@ -49,6 +49,28 @@ class EntityField
      */
     protected $rawData;
 
+    public static function parseType($value): string
+    {
+        if (\is_string($value)) {
+            return static::TYPE_STRING;
+        }
+
+        if (\is_numeric($value)) {
+            return static::TYPE_INTEGER;
+        }
+
+        if (\is_bool($value)) {
+            return static::TYPE_BOOLEAN;
+        }
+
+        return static::TYPE_UNKNOWN;
+    }
+
+    public static function parseValue($value): string
+    {
+        return json_encode($value);
+    }
+
     public function getName(): string
     {
         return $this->name;
