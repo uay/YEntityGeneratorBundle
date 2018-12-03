@@ -291,8 +291,13 @@ class MakeFactory
     public function make(bool $generatedHint = true): bool
     {
         $classPath = $this->namespacePath . DIRECTORY_SEPARATOR . $this->class->getName() . '.php';
-        $classPath = \str_replace('/', DIRECTORY_SEPARATOR, $classPath);
-        $classPath = \str_replace('\\', DIRECTORY_SEPARATOR, $classPath);
+        $classPath = \str_replace([
+            '/',
+            '\\',
+        ], [
+            DIRECTORY_SEPARATOR,
+            DIRECTORY_SEPARATOR,
+        ], $classPath);
 
         $extends = $this->class->getExtends() ?? '';
         $extends = preg_replace('~[^A-Za-z0-9\\\\]~', '', $extends);
