@@ -141,7 +141,12 @@ class DataModelGenerator
             $nullable = false;
         }
         $modifier = $rawField['modifier'] ?? EntityField::MODIFIER_PROTECTED;
-        $value = $rawField['value'] ?? $rawField['target'] ?? null;
+
+        if (isset($rawField['value'])) {
+            $value = EntityField::parseValue($rawField['value']);
+        } else {
+            $value = $rawField['target'] ?? null;
+        }
 
         $result = new EntityField();
 
