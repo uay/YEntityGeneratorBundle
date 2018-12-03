@@ -222,13 +222,21 @@ class MakeFactory
 
         foreach ($properties as $property) {
             if ($property->isConstant()) {
-                throw new \RuntimeException('This should never happen!');
+                throw new \RuntimeException(
+                    "The property `{$this->class->getName()}->{$property->getName()}` must not be a constant!"
+                );
             }
 
             $defaultValuePostfix = $property->getDefault();
 
             if ($defaultValuePostfix === null) {
                 continue;
+            }
+
+            if (!\is_string($defaultValuePostfix) || $defaultValuePostfix === '') {
+                throw new \RuntimeException(
+                    "The default value for `{$this->class->getName()}->{$property->getName()}` must be a valid string!"
+                );
             }
 
             $defaultValuePostfix = str_replace('"', '\'', $defaultValuePostfix);
