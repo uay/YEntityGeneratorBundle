@@ -151,7 +151,7 @@ uay_entities:
 - [x] Generate app repositories
 - [x] Generate app enums
 - [x] Configure generated names
-- [ ] Better UML configuration
+- [x] Better UML configuration
 - [ ] Recursive namespace configurations
 - [ ] Config validation
 - [ ] Generate base repositories

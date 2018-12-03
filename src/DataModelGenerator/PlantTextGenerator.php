@@ -8,6 +8,11 @@ use function Jawira\PlantUml\encodep;
 class PlantTextGenerator
 {
     /**
+     * @var InputModel
+     */
+    protected $inputModel;
+
+    /**
      * @var string
      */
     protected $plantText;
@@ -16,13 +21,15 @@ class PlantTextGenerator
     {
         $result = [];
 
+        $shouldProduceValidUML = $this->inputModel->getUML('valid');
+
         $type = $entity->getType() === Entity::TYPE_ENUM ? 'enum' : 'class';
 
         $result[] = "{$type} {$entity->getName()} {";
 
         $plantTypeField = 'field';
         $plantTypeMethod = 'method';
-        $plantTypeExternal = $plantTypeMethod;
+        $plantTypeExternal = $shouldProduceValidUML ? $plantTypeField : $plantTypeMethod;
 
         if ($entity->getType() === Entity::TYPE_ENTITY) {
             $result[] = "  {{$plantTypeField}}+integer id";
@@ -116,10 +123,13 @@ class PlantTextGenerator
     }
 
     /**
+     * @param InputModel $inputModel
      * @param Entity[] $entities
      */
-    public function __construct(array $entities)
+    public function __construct(InputModel $inputModel, array $entities)
     {
+        $this->inputModel = $inputModel;
+
         $plantText = [];
 
         $plantText[] = '@startuml';

@@ -263,7 +263,7 @@ class DataModelGenerator
 
     protected function generatePlantTextUml(): void
     {
-        $plantTextGenerator = new PlantTextGenerator($this->entities);
+        $plantTextGenerator = new PlantTextGenerator($this->inputModel, $this->entities);
 
         $plantTextGenerator->write($this->pathEntities . DIRECTORY_SEPARATOR . static::FILE_PLANTTEXT);
 

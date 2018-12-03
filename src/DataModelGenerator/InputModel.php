@@ -13,11 +13,12 @@ class InputModel
 
     protected const CONFIG_KEY_NAMESPACE = 'namespace';
     protected const CONFIG_KEY_CLASS_POSTFIX = 'classPostfix';
+    protected const CONFIG_KEY_UML = 'uml';
 
     /**
      * @var array
      */
-    protected $configuration = [
+    protected static $defaultConfiguration = [
         self::CONFIG_KEY_NAMESPACE => [
             'app' => 'App',
             'base' => 'Generated',
@@ -29,7 +30,15 @@ class InputModel
             'entity' => 'Generated',
             'repository' => 'Repository',
         ],
+        self::CONFIG_KEY_UML => [
+            'valid' => false,
+        ],
     ];
+
+    /**
+     * @var array
+     */
+    protected $configuration;
 
     /**
      * @var array
@@ -48,7 +57,7 @@ class InputModel
             $this->{$property} = ArrayUtil::getValueByPath($config, $requiredPath);
         }
 
-        $this->configuration = ArrayUtil::fillRecursive($this->configuration, $config);
+        $this->configuration = ArrayUtil::fillRecursive(static::$defaultConfiguration, $config);
     }
 
     protected function getConfigStringOrThrow(string $group, string $name): string
@@ -76,6 +85,15 @@ class InputModel
     public function getClassPostfix(string $name): string
     {
         return $this->getConfigStringOrThrow(static::CONFIG_KEY_CLASS_POSTFIX, $name);
+    }
+
+    /**
+     * @param string $name
+     * @return string
+     */
+    public function getUML(string $name): string
+    {
+        return $this->getConfigStringOrThrow(static::CONFIG_KEY_UML, $name);
     }
 
     public function getEntitiesData(): array
