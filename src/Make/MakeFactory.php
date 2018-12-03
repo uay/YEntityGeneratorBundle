@@ -222,7 +222,7 @@ class MakeFactory
 
         foreach ($properties as $property) {
             if ($property->isConstant()) {
-                continue;
+                throw new \RuntimeException('This should never happen!');
             }
 
             $defaultValuePostfix = $property->getDefault();
