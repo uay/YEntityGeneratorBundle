@@ -269,7 +269,8 @@ class MakeFactory
                 $lines[] = " * @return {$propertyTypeOriginal}";
                 $lines[] = ' */';
             }
-            $lines[] = "public function get{$propertyName}(){$getterReturnType}";
+            $getterPrefix = $propertyType === 'bool' ? 'is' : 'get';
+            $lines[] = "public function $getterPrefix{$propertyName}(){$getterReturnType}";
             $lines[] = '{';
             $lines[] = static::FILE_INTEND . "return \$this->{$propertyNameOriginal};";
             $lines[] = '}';
