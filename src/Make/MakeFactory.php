@@ -214,6 +214,9 @@ class MakeFactory
             return $lines;
         }
 
+        $lines[] = '/**';
+        $lines[] = ' * @throws \Exception';
+        $lines[] = ' */';
         $lines[] = 'public function __construct()';
         $lines[] = '{';
 
