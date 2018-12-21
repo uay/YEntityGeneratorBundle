@@ -7,13 +7,13 @@ use Uay\YEntityGeneratorBundle\Utils\ArrayUtil;
 class InputModel
 {
     protected const CONFIG_KEY_ENTITIES = 'entities';
-    protected const CONFIG_REQUIRED_PATHS = [
-        'entitiesData' => self::CONFIG_KEY_ENTITIES,
-    ];
-
     protected const CONFIG_KEY_NAMESPACE = 'namespace';
     protected const CONFIG_KEY_CLASS_POSTFIX = 'classPostfix';
     protected const CONFIG_KEY_UML = 'uml';
+
+    protected const CONFIG_REQUIRED_PATHS = [
+        'entitiesData' => self::CONFIG_KEY_ENTITIES,
+    ];
 
     /**
      * @var array
