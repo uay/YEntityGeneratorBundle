@@ -303,8 +303,14 @@ class DataModelGenerator
                 ]);
 
                 foreach ($entity->getFields() as $field) {
+                    $fieldValue = $field->getValue();
+
+                    if (!\is_numeric($fieldValue)) {
+                        throw new \RuntimeException("The value `$fieldValue` is currently not supported as constant value!");
+                    }
+
                     // TODO: also support strings, etc.
-                    $property = new EntityClassProperty($field->getName(), 'int', $field->getValue(), []);
+                    $property = new EntityClassProperty($field->getName(), 'int', $fieldValue, []);
 
                     $property->setConstant(true);
 
