@@ -348,13 +348,11 @@ class DataModelGenerator
 
             foreach ($entity->getFields() as $field) {
                 $fieldType = $field->getType();
-                $isEnum = false;
+                $isEnum = $fieldType === EntityField::TYPE_ENUM;
 
                 $fieldRawData = $field->getRawData() ?? [];
 
-                if ($fieldType === EntityField::TYPE_ENUM) {
-                    $isEnum = true;
-
+                if ($isEnum) {
                     $fieldType = $field->getValue();
 
                     $ormColumnData = [
@@ -366,9 +364,9 @@ class DataModelGenerator
                         throw new \RuntimeException('Import conflict!');
                     }
                 } else {
-                    $ormColumnData = [];
-
-                    $ormColumnData['type'] = $fieldType;
+                    $ormColumnData = [
+                        'type' => $fieldType,
+                    ];
                 }
 
                 foreach (static::MAPPED_ORM_FIELDS as $ormField => $ormFieldDefault) {
