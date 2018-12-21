@@ -60,13 +60,18 @@ class InputModel
         $this->configuration = ArrayUtil::fillRecursive(static::$defaultConfiguration, $config);
     }
 
-    protected function getConfigStringOrThrow(string $group, string $name): string
+    protected function getConfigValueOrThrow(string $group, string $name)
     {
         if (!isset($this->configuration[$group][$name])) {
             throw new \RuntimeException("The configuration `$group.$name` is missing!");
         }
 
         return $this->configuration[$group][$name];
+    }
+
+    protected function getConfigStringOrThrow(string $group, string $name): string
+    {
+        return $this->getConfigValueOrThrow($group, $name);
     }
 
     /**
