@@ -45,9 +45,9 @@ class EntityField
     protected $value;
 
     /**
-     * @var null|array
+     * @var array
      */
-    protected $rawData;
+    protected $rawData = [];
 
     public static function parseType($value): string
     {
@@ -136,12 +136,12 @@ class EntityField
         $this->value = $value;
     }
 
-    public function getRawData(): ?array
+    public function getRawData(): array
     {
         return $this->rawData;
     }
 
-    public function setRawData(?array $rawData): void
+    public function setRawData(array $rawData): void
     {
         $this->rawData = $rawData;
     }
