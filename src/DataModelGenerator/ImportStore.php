@@ -48,6 +48,10 @@ class ImportStore
 
     public function require(string $key): void
     {
+        if (!isset($this->imports[$key])) {
+            throw new \RuntimeException("The key `$key` has no referenced import!");
+        }
+
         if (isset($this->usedImportKeys[$key])) {
             return;
         }
@@ -65,6 +69,8 @@ class ImportStore
         foreach ($this->usedImportKeys as $key) {
             $result[$key] = $this->imports[$key];
         }
+
+        uksort($result, 'strcasecmp');
 
         return $result;
     }
