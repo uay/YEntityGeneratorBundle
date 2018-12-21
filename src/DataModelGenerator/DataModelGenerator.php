@@ -405,7 +405,11 @@ class DataModelGenerator
                     $ormColumnData[$key] = json_encode($value);
                 }
 
-                $phpDocType = static::TYPE_MAPPING[$fieldType] ?? $fieldType;
+                if ($isEnum) {
+                    $phpDocType = self::PHP_TYPE_INT;
+                } else {
+                    $phpDocType = static::TYPE_MAPPING[$fieldType] ?? $fieldType;
+                }
 
                 if ($field->isNullable()) {
                     $phpDocType .= '|null';
@@ -461,6 +465,12 @@ class DataModelGenerator
 
                         $importStore->require($importKey);
                     }
+                }
+
+                if ($isEnum) {
+                    $annotations[] = '';
+                    $annotations[] = "@see $fieldType";
+                    $importStore->require($fieldType);
                 }
 
                 $property = new EntityClassProperty($field->getName(), $phpDocType, $defaultValue, $annotations);
