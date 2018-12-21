@@ -342,8 +342,11 @@ class DataModelGenerator
 
             foreach ($entity->getFields() as $field) {
                 $fieldType = $field->getType();
+                $isEnum = false;
 
                 if ($fieldType === EntityField::TYPE_ENUM) {
+                    $isEnum = true;
+
                     $fieldType = $field->getValue();
 
                     $ormColumnData = [
@@ -394,6 +397,19 @@ class DataModelGenerator
                     return "{$key}={$value}";
                 }, array_keys($ormColumnData), $ormColumnData);
 
+                if ($isEnum) {
+                    $fieldRawData = $field->getRawData() ?? [];
+
+                    $defaultValue = $fieldRawData['default'] ?? null;
+
+                    if ($defaultValue === null && !$field->isNullable()) {
+                        throw new \RuntimeException('You must provide default value for nullable enum!');
+                    }
+
+                    if ($defaultValue !== null) {
+                        $defaultValue = "$fieldType::$defaultValue";
+                    }
+                } else {
                 $defaultValue = $field->getValue();
 
                 if ($defaultValue === 'null') {
@@ -403,6 +419,7 @@ class DataModelGenerator
                 if ($defaultValue === null && !$field->isNullable()) {
                     $defaultValue = static::TYPE_DEFAULT_VALUES_MAPPING[$phpDocType]
                         ?? static::TYPE_DEFAULT_VALUE;
+                }
                 }
 
                 $property = new EntityClassProperty($field->getName(), $phpDocType, $defaultValue, [
