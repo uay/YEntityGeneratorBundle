@@ -68,6 +68,11 @@ class EntityField
 
     public static function parseValue($value): string
     {
+        // Fix for default values
+        if (\is_string($value)) {
+            return $value;
+        }
+
         return json_encode($value);
     }
 
