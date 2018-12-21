@@ -327,6 +327,10 @@ class DataModelGenerator
 
             $imports['ORM'] = 'Doctrine\ORM\Mapping as ORM';
 
+            foreach ($this->inputModel->getImports() as $importKey => $importValue) {
+                $imports[$importKey] = "$importValue as $importKey";
+            }
+
             /** @var EntityClassProperty[] $properties */
             $properties = [];
 
@@ -410,16 +414,16 @@ class DataModelGenerator
                         $defaultValue = "$fieldType::$defaultValue";
                     }
                 } else {
-                $defaultValue = $field->getValue();
+                    $defaultValue = $field->getValue();
 
-                if ($defaultValue === 'null') {
-                    $defaultValue = null;
-                }
+                    if ($defaultValue === 'null') {
+                        $defaultValue = null;
+                    }
 
-                if ($defaultValue === null && !$field->isNullable()) {
-                    $defaultValue = static::TYPE_DEFAULT_VALUES_MAPPING[$phpDocType]
-                        ?? static::TYPE_DEFAULT_VALUE;
-                }
+                    if ($defaultValue === null && !$field->isNullable()) {
+                        $defaultValue = static::TYPE_DEFAULT_VALUES_MAPPING[$phpDocType]
+                            ?? static::TYPE_DEFAULT_VALUE;
+                    }
                 }
 
                 $property = new EntityClassProperty($field->getName(), $phpDocType, $defaultValue, [

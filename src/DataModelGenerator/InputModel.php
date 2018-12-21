@@ -10,6 +10,7 @@ class InputModel
     protected const CONFIG_KEY_NAMESPACE = 'namespace';
     protected const CONFIG_KEY_CLASS_POSTFIX = 'classPostfix';
     protected const CONFIG_KEY_UML = 'uml';
+    protected const CONFIG_KEY_IMPORTS = 'imports';
 
     protected const CONFIG_REQUIRED_PATHS = [
         'entitiesData' => self::CONFIG_KEY_ENTITIES,
@@ -33,6 +34,7 @@ class InputModel
         self::CONFIG_KEY_UML => [
             'valid' => false,
         ],
+        self::CONFIG_KEY_IMPORTS => [],
     ];
 
     /**
@@ -58,6 +60,10 @@ class InputModel
         }
 
         $this->configuration = ArrayUtil::fillRecursive(static::$defaultConfiguration, $config);
+
+        // Because "imports" is an array you must set it manually
+        $this->configuration[static::CONFIG_KEY_IMPORTS] = $config[static::CONFIG_KEY_IMPORTS]
+            ?? static::$defaultConfiguration[static::CONFIG_KEY_IMPORTS];
     }
 
     protected function getConfigValueOrThrow(string $group, string $name)
@@ -87,6 +93,14 @@ class InputModel
     public function getUML(string $name): string
     {
         return $this->getConfigStringOrThrow(static::CONFIG_KEY_UML, $name);
+    }
+
+    /**
+     * @return string[]
+     */
+    public function getImports(): array
+    {
+        return $this->configuration[static::CONFIG_KEY_IMPORTS];
     }
 
     public function getEntitiesData(): array

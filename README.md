@@ -126,6 +126,9 @@ And add the package to `require-dev` and replace `<version>` with the current ve
 
 ```yaml
 uay_entities:
+  imports:                      # Define your entity imports
+    Assert: 'Symfony\Component\Validator\Constraints'
+    # ...
   entities:                     # Define your entities here like in the example above
     # ...
   uml:                          # Define your uml settings here
