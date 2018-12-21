@@ -73,6 +73,10 @@ class DataModelGenerator
         self::PHP_TYPE_OBJECT => 'null',
     ];
 
+    protected const MAPPED_ORM_FIELDS = [
+        'length' => null,
+    ];
+
     /**
      * @var InputModel
      */
@@ -346,6 +350,8 @@ class DataModelGenerator
                 $fieldType = $field->getType();
                 $isEnum = false;
 
+                $fieldRawData = $field->getRawData() ?? [];
+
                 if ($fieldType === EntityField::TYPE_ENUM) {
                     $isEnum = true;
 
@@ -360,9 +366,23 @@ class DataModelGenerator
                         throw new \RuntimeException('Import conflict!');
                     }
                 } else {
-                    $ormColumnData = $field->getRawData() ?? [];
+                    $ormColumnData = [];
 
                     $ormColumnData['type'] = $fieldType;
+                }
+
+                foreach (static::MAPPED_ORM_FIELDS as $ormField => $ormFieldDefault) {
+                    $ormFieldValue = $fieldRawData[$ormField] ?? $ormFieldDefault;
+
+                    if ($ormFieldValue === null) {
+                        continue;
+                    }
+
+                    $ormColumnData[$ormField] = $ormFieldValue;
+                }
+
+                foreach ($fieldRawData['orm'] ?? [] as $tmpOrmKey => $tmpOrmValue) {
+                    $ormColumnData[$tmpOrmKey] = $tmpOrmValue;
                 }
 
                 $ormColumnData = static::filterOrmColumnData($ormColumnData);
@@ -398,8 +418,6 @@ class DataModelGenerator
                 }, array_keys($ormColumnData), $ormColumnData);
 
                 if ($isEnum) {
-                    $fieldRawData = $field->getRawData() ?? [];
-
                     $defaultValue = $fieldRawData['default'] ?? null;
 
                     if ($defaultValue === null && !$field->isNullable()) {
@@ -422,9 +440,32 @@ class DataModelGenerator
                     }
                 }
 
-                $property = new EntityClassProperty($field->getName(), $phpDocType, $defaultValue, [
+                $annotations = [
                     '@ORM\Column(' . implode(', ', $ormColumnData) . ')',
-                ]);
+                ];
+
+                $addDocs = $fieldRawData['docs'] ?? [];
+                if (count($addDocs) > 0) {
+                    $annotations[] = '';
+                    foreach ($addDocs as $docs) {
+                        $annotations[] = $docs;
+
+                        $matches = [];
+                        if (!preg_match('/@(?<importKey>.*?)[\\\\\s](.*?)/', trim($docs), $matches)) {
+                            continue;
+                        }
+
+                        $importKey = $matches['importKey'] ?? null;
+
+                        if ($importKey === null) {
+                            continue;
+                        }
+
+                        $importStore->require($importKey);
+                    }
+                }
+
+                $property = new EntityClassProperty($field->getName(), $phpDocType, $defaultValue, $annotations);
                 $importStore->require('ORM');
 
                 $properties[$property->getName()] = $property;
