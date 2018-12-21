@@ -318,17 +318,14 @@ class DataModelGenerator
                 throw new \RuntimeException("Unexpected entity type `{$entity->getType()}`!");
             }
 
-            $imports = [];
+            $importStore = new ImportStore();
 
-            if (\count($entity->getRelations()) > 0) {
-                $imports['ArrayCollection'] = ArrayCollection::class;
-                $imports['Collection'] = Collection::class;
-            }
-
-            $imports['ORM'] = 'Doctrine\ORM\Mapping as ORM';
+            $importStore->add('ArrayCollection', ArrayCollection::class);
+            $importStore->add('Collection', Collection::class);
+            $importStore->add('ORM', 'Doctrine\ORM\Mapping as ORM');
 
             foreach ($this->inputModel->getImports() as $importKey => $importValue) {
-                $imports[$importKey] = "$importValue as $importKey";
+                $importStore->add($importKey, "$importValue as $importKey");
             }
 
             /** @var EntityClassProperty[] $properties */
@@ -339,6 +336,7 @@ class DataModelGenerator
                 '@ORM\GeneratedValue()',
                 '@ORM\Column(type="integer")',
             ]);
+            $importStore->require('ORM');
 
             $appNamespace = $this->inputModel->getNamespace('app');
             $entityNamespace = $appNamespace . '\\' . $this->inputModel->getNamespace('entity');
@@ -358,9 +356,7 @@ class DataModelGenerator
                     ];
 
                     $fieldTypeImport = $enumNamespace . '\\' . $fieldType;
-                    if (!isset($imports[$fieldType])) {
-                        $imports[$fieldType] = $fieldTypeImport;
-                    } elseif ($imports[$fieldType] !== $fieldTypeImport) {
+                    if (!$importStore->add($fieldType, $fieldTypeImport, true, false)) {
                         throw new \RuntimeException('Import conflict!');
                     }
                 } else {
@@ -429,6 +425,7 @@ class DataModelGenerator
                 $property = new EntityClassProperty($field->getName(), $phpDocType, $defaultValue, [
                     '@ORM\Column(' . implode(', ', $ormColumnData) . ')',
                 ]);
+                $importStore->require('ORM');
 
                 $properties[$property->getName()] = $property;
             }
@@ -447,9 +444,7 @@ class DataModelGenerator
                     : $entityNamespace;
 
                 $targetEntityImport = $targetNamespace . '\\' . $targetEntity;
-                if (!isset($imports[$targetEntity])) {
-                    $imports[$targetEntity] = $targetEntityImport;
-                } elseif ($imports[$targetEntity] !== $targetEntityImport) {
+                if (!$importStore->add($targetEntity, $targetEntityImport, true, false)) {
                     throw new \RuntimeException('Import conflict!');
                 }
 
@@ -460,6 +455,7 @@ class DataModelGenerator
                         '@ORM\Column(type="integer", nullable=true)',
                         "@see {$targetEntity}",
                     ]);
+                    $importStore->require('ORM');
 
                     $properties[$property->getName()] = $property;
                     continue;
@@ -496,12 +492,14 @@ class DataModelGenerator
 
                 if ($targetRelation === EntityRelationPoint::RELATION_MANY) {
                     $phpDocType .= '[]|Collection';
+                    $importStore->require('Collection');
                 }
 
                 $defaultValue = 'null';
 
                 if ($targetRelation === EntityRelationPoint::RELATION_MANY) {
                     $defaultValue = 'new ArrayCollection()';
+                    $importStore->require('ArrayCollection');
                 }
 
                 if ($defaultValue === 'null') {
@@ -511,13 +509,14 @@ class DataModelGenerator
                 $property = new EntityClassProperty($targetName, $phpDocType, $defaultValue, [
                     "@ORM\\$ormRelation(" . implode(', ', $ormColumnData) . ')',
                 ]);
+                $importStore->require('ORM');
 
                 $properties[$property->getName()] = $property;
             }
 
             $basePath = '\\' . $this->inputModel->getNamespace('entity')
                 . '\\' . $this->inputModel->getNamespace('base');
-            $class = new EntityClass($entity->getName() . $this->inputModel->getClassPostfix('entity'), $basePath, $imports);
+            $class = new EntityClass($entity->getName() . $this->inputModel->getClassPostfix('entity'), $basePath, $importStore->getRequiredImports());
 
             foreach ($properties as $property) {
                 $class->addProperty($property);
