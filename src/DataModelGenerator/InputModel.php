@@ -74,28 +74,16 @@ class InputModel
         return $this->getConfigValueOrThrow($group, $name);
     }
 
-    /**
-     * @param string $name
-     * @return string
-     */
     public function getNamespace(string $name): string
     {
         return $this->getConfigStringOrThrow(static::CONFIG_KEY_NAMESPACE, $name);
     }
 
-    /**
-     * @param string $name
-     * @return string
-     */
     public function getClassPostfix(string $name): string
     {
         return $this->getConfigStringOrThrow(static::CONFIG_KEY_CLASS_POSTFIX, $name);
     }
 
-    /**
-     * @param string $name
-     * @return string
-     */
     public function getUML(string $name): string
     {
         return $this->getConfigStringOrThrow(static::CONFIG_KEY_UML, $name);
