@@ -2,7 +2,7 @@
 
 namespace Uay\YEntityGeneratorBundle\Command;
 
-use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\HttpKernel\KernelInterface;
@@ -11,7 +11,7 @@ use Uay\YEntityGeneratorBundle\DataModelGenerator\InputModel;
 use Uay\YEntityGeneratorBundle\DependencyInjection\UayEntitiesExtension;
 use Uay\YEntityGeneratorBundle\Utils\FileUtil;
 
-class DataModelGeneratorCommand extends ContainerAwareCommand
+class DataModelGeneratorCommand extends Command
 {
     protected static $defaultName = 'entities:generate';
 
@@ -44,7 +44,7 @@ class DataModelGeneratorCommand extends ContainerAwareCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $pathKernelRoot = $this->kernel->getRootDir();
+        $pathKernelRoot = $this->kernel->getProjectDir();
         $pathApplication = \dirname($pathKernelRoot);
 
         $pathEntities = $pathApplication . DIRECTORY_SEPARATOR . 'entities';

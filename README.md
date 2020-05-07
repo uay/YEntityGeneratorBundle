@@ -5,6 +5,15 @@ for your Symfony applications with unprecedented simplicity.
 
 ## What does this bundle?
 
+### Step 0: Import the config file to your services
+
+`./config/services.yaml`
+```
+
+imports:
+    - { resource: 'uay_entities.yaml' }
+```
+
 ### Step 1: Configure your entities
 
 `./config/uay_entities.yaml`
