@@ -9,7 +9,7 @@ use Uay\YEntityGeneratorBundle\Utils\FileUtil;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Symfony\Bridge\Doctrine\RegistryInterface;
+use Doctrine\Persistence\ManagerRegistry;
 
 class DataModelGenerator
 {
@@ -603,7 +603,7 @@ class DataModelGenerator
             if (!class_exists($repositoryName)) {
                 $class = new EntityClass($repository, '\\' . $this->inputModel->getNamespace('repository'), [
                     ServiceEntityRepository::class,
-                    RegistryInterface::class,
+                    ManagerRegistry::class,
                     $className,
                 ]);
 
@@ -611,7 +611,7 @@ class DataModelGenerator
                 $class->setExtends('ServiceEntityRepository');
 
                 $class->setBody(MakeFactory::renderArrayAsString([
-                    'public function __construct(RegistryInterface $registry)',
+                    'public function __construct(ManagerRegistry $registry)',
                     '{',
                     [
                         "parent::__construct(\$registry, {$entity->getName()}::class);",
