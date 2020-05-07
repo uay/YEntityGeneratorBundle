@@ -44,7 +44,7 @@ class DataModelGeneratorCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $pathKernelRoot = $this->kernel->getProjectDir();
+        $pathKernelRoot = $this->kernel->getProjectDir() . '/src/';
         $pathApplication = \dirname($pathKernelRoot);
 
         $pathEntities = $pathApplication . DIRECTORY_SEPARATOR . 'entities';
